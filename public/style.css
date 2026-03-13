@@ -90,6 +90,8 @@ body {
 
 .coin-wrapper.off .coin { filter: brightness(0.15); }
 
+#loadingCoins .coin { width: 80px; height: 80px; }
+
 /* ─── Player List ────────────────────────────────────── */
 
 .player-list {

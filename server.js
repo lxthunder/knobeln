@@ -66,6 +66,8 @@ function startLoading() {
 function startGuessing() {
   state.phase = 'guessing';
   state.turnIndex = 0;
+  const total = getActive().reduce((sum, p) => sum + (p.coinsLoaded || 0), 0);
+  console.log(`Münzen gesamt: ${total}`);
 
   // Turn order = join order, skip spectators
   const active = getActive();
@@ -83,7 +85,17 @@ function advanceTurn() {
   if (active.length === 0) { doReveal(); return; }
 
   const current = active[0];
-  io.emit('game:turnStart', { playerId: current.id, playerName: current.name });
+
+  // If last player: forbid the number if all previous guesses are identical
+  let forbiddenNumber = null;
+  if (active.length === 1) {
+    const previous = getActive().filter(p => p.guess !== null).map(p => p.guess);
+    if (previous.length > 0 && previous.every(g => g === previous[0])) {
+      forbiddenNumber = previous[0];
+    }
+  }
+
+  io.emit('game:turnStart', { playerId: current.id, playerName: current.name, forbiddenNumber });
 }
 
 function doReveal() {
@@ -173,6 +185,13 @@ io.on('connection', (socket) => {
     const g = parseInt(number);
     if (isNaN(g) || g < 0) return;
 
+    // Forbidden number check
+    const stillGuessing = getActive().filter(p => p.guess === null);
+    if (stillGuessing.length === 1) {
+      const previous = getActive().filter(p => p.guess !== null).map(p => p.guess);
+      if (previous.length > 0 && previous.every(v => v === previous[0]) && g === previous[0]) return;
+    }
+
     player.guess = g;
     io.emit('game:guessSubmitted', { playerId: socket.id, playerName: player.name, guess: g });
 
@@ -224,7 +243,18 @@ io.on('connection', (socket) => {
 
 // ─── Start ─────────────────────────────────────────────────────────────────────
 
-const PORT = 80;
+const PORT = 8080;
 server.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+  const { networkInterfaces } = require('os');
+  const nets = networkInterfaces();
+  const ips = [];
+  for (const iface of Object.values(nets)) {
+    for (const net of iface) {
+      if (net.family === 'IPv4' && !net.internal) ips.push(net.address);
+    }
+  }
+  console.log('─────────────────────────────────');
+  console.log(`  Lokal:   http://localhost:${PORT}`);
+  ips.forEach(ip => console.log(`  Netzwerk: http://${ip}:${PORT}`));
+  console.log('─────────────────────────────────');
 });

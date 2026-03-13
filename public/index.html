@@ -94,18 +94,16 @@
   <!-- LOADING: Münzen wählen + Checkbox -->
   <div id="screen-loading" class="screen">
     <h1>LADEN</h1>
+    <div class="checkbox-wrap">
+      <input type="checkbox" id="lockCheckbox" onchange="onCheckboxChange()">
+      <label for="lockCheckbox">Bereit</label>
+    </div>
     <p id="loadingHint" style="color:#aaa;font-size:14px;">Wähle deine Münzen und bestätige</p>
 
-    <div class="coin-checkbox-row">
-      <div class="coins-row" id="loadingCoins">
-        <div class="coin-wrapper" onclick="toggleCoin(0)"><div class="coin"><img src="coin.png" alt="coin"></div></div>
-        <div class="coin-wrapper" onclick="toggleCoin(1)"><div class="coin"><img src="coin.png" alt="coin"></div></div>
-        <div class="coin-wrapper" onclick="toggleCoin(2)"><div class="coin"><img src="coin.png" alt="coin"></div></div>
-      </div>
-      <div class="checkbox-wrap">
-        <input type="checkbox" id="lockCheckbox" onchange="onCheckboxChange()">
-        <label for="lockCheckbox">Bereit</label>
-      </div>
+    <div class="coins-row" id="loadingCoins">
+      <div class="coin-wrapper" onclick="toggleCoin(0)"><div class="coin"><img src="coin.png" alt="coin"></div></div>
+      <div class="coin-wrapper" onclick="toggleCoin(1)"><div class="coin"><img src="coin.png" alt="coin"></div></div>
+      <div class="coin-wrapper" onclick="toggleCoin(2)"><div class="coin"><img src="coin.png" alt="coin"></div></div>
     </div>
 
     <div id="spectatorBanner" class="spectator-banner" style="display:none">Du schaust zu</div>
@@ -152,6 +150,35 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
+    // ── Sounds ─────────────────────────────────────────────
+    let audioCtx = null;
+    function ctx() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      return audioCtx;
+    }
+    function play(freq, type, duration, startVol, endFreq) {
+      const c = ctx();
+      const osc = c.createOscillator();
+      const gain = c.createGain();
+      osc.connect(gain); gain.connect(c.destination);
+      osc.type = type || 'sine';
+      osc.frequency.setValueAtTime(freq, c.currentTime);
+      if (endFreq) osc.frequency.exponentialRampToValueAtTime(endFreq, c.currentTime + duration);
+      gain.gain.setValueAtTime(startVol || 0.25, c.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + duration);
+      osc.start(c.currentTime); osc.stop(c.currentTime + duration);
+    }
+    const sounds = {
+      coin: () => play(900, 'sine', 0.12, 0.2, 1300),
+      total: () => {
+        [523, 659, 784].forEach((f, i) => setTimeout(() => play(f, 'sine', 0.35, 0.18), i * 100));
+      },
+      correct: () => {
+        [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => play(f, 'sine', 0.3, 0.2), i * 80));
+      },
+      loser: () => play(300, 'sawtooth', 0.9, 0.3, 80),
+    };
+
     const socket = io();
     let myId = null;
     let isHost = false;
@@ -161,6 +188,7 @@
     let hasJoined = false;
     let turnOrderData = [];
     let revealAnimationEndsAt = 0;
+    let forbiddenNumber = null;
 
     function show(id) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -271,6 +299,7 @@
       const cb = document.getElementById('lockCheckbox');
       if (!cb.checked) return;
 
+      sounds.coin();
       // Lock coins and checkbox
       isChecked = true;
       cb.disabled = true;
@@ -293,7 +322,8 @@
     }
 
     // ── Guessing ───────────────────────────────────────────
-    socket.on('game:turnStart', ({ playerId, playerName }) => {
+    socket.on('game:turnStart', ({ playerId, playerName, forbiddenNumber: fn }) => {
+      forbiddenNumber = fn ?? null;
       const isMe = playerId === myId;
       document.getElementById('whoseTurn').innerHTML = isMe
         ? '<span>Du bist dran!</span>'
@@ -302,6 +332,8 @@
       document.getElementById('guessInput').disabled = !isMe;
       document.getElementById('guessBtn').disabled = !isMe;
       if (isMe) { document.getElementById('guessInput').value = ''; document.getElementById('guessInput').focus(); }
+
+      document.getElementById('guessInput').style.borderBottomColor = '';
 
       renderTurnOrder(playerId);
     });
@@ -314,9 +346,40 @@
     function submitGuess() {
       const val = parseInt(document.getElementById('guessInput').value);
       if (isNaN(val)) return;
+      if (forbiddenNumber !== null && val === forbiddenNumber) return;
+      sounds.coin();
       socket.emit('player:guess', { number: val });
       document.getElementById('guessInput').disabled = true;
       document.getElementById('guessBtn').disabled = true;
+    }
+
+    document.getElementById('guessInput').addEventListener('keydown', e => {
+      if (e.key === 'ArrowUp') play(1100, 'sine', 0.1, 0.15, 1400);
+      else if (e.key === 'ArrowDown') play(500, 'sine', 0.1, 0.15, 300);
+
+      if (forbiddenNumber === null) return;
+      const input = e.target;
+      const cur = parseInt(input.value) || 0;
+      if (e.key === 'ArrowUp' && cur + 1 === forbiddenNumber) {
+        e.preventDefault();
+        input.value = forbiddenNumber + 1;
+        checkForbidden(input);
+      } else if (e.key === 'ArrowDown' && cur - 1 === forbiddenNumber) {
+        e.preventDefault();
+        input.value = forbiddenNumber - 1;
+        checkForbidden(input);
+      }
+    });
+
+    document.getElementById('guessInput').addEventListener('input', e => {
+      checkForbidden(e.target);
+    });
+
+    function checkForbidden(input) {
+      const val = parseInt(input.value);
+      const isForbidden = forbiddenNumber !== null && val === forbiddenNumber;
+      input.style.borderBottomColor = isForbidden ? '#c0392b' : '';
+      document.getElementById('guessBtn').disabled = isForbidden || input.disabled;
     }
 
     document.addEventListener('keydown', e => {
@@ -396,6 +459,7 @@
         group.forEach(coin => {
           setTimeout(() => {
             coin.classList.add('visible');
+            sounds.coin();
             counter++;
             counterEl.textContent = counter;
             counterEl.classList.remove('counter-bump');
@@ -409,6 +473,7 @@
       setTimeout(() => {
         labelEl.textContent = 'GESAMT';
         labelEl.style.color = '';
+        sounds.total();
         revealList.querySelectorAll('li').forEach(li => {
           if (correctGuessers.includes(li.dataset.id)) {
             li.style.color = '#444';
@@ -426,6 +491,7 @@
         const names = correctGuessers.map(id => coinsPerPlayer[id]?.name).filter(Boolean);
         if (names.length > 0) {
           msgEl.textContent = names.join(', ') + (names.length === 1 ? ' hat richtig geraten!' : ' haben richtig geraten!');
+          sounds.correct();
         } else {
           msgEl.textContent = 'Niemand hat richtig geraten.';
         }
@@ -447,6 +513,7 @@
       const waitMs = Math.max(0, revealAnimationEndsAt - Date.now());
       setTimeout(() => {
       show('screen-finished');
+      sounds.loser();
       document.getElementById('loserName').textContent = loserName;
       if (isHost) {
         document.getElementById('playAgainBtn').style.display = '';
