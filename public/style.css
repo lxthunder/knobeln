@@ -1,0 +1,206 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #000;
+  color: #fff;
+  font-family: sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 24px;
+}
+
+/* ─── Inputs ─────────────────────────────────────────── */
+
+.input-underline {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid #555;
+  outline: none;
+  color: #ff8c00;
+  font-size: 22px;
+  font-weight: bold;
+  text-align: center;
+  padding: 4px 8px;
+}
+
+.input-underline::placeholder { color: #555; }
+.input-underline:focus { border-bottom-color: #aaa; }
+
+/* ─── Buttons ────────────────────────────────────────── */
+
+.btn {
+  background: transparent;
+  border: 2px solid #ff8c00;
+  color: #ff8c00;
+  font-size: 16px;
+  font-weight: bold;
+  padding: 10px 28px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.btn:hover { background: #ff8c00; color: #000; }
+.btn:disabled { border-color: #333; color: #333; cursor: not-allowed; }
+.btn:disabled:hover { background: transparent; color: #333; }
+
+.btn-secondary {
+  border-color: #555;
+  color: #555;
+}
+.btn-secondary:hover { background: #555; color: #000; }
+
+/* ─── Coins ──────────────────────────────────────────── */
+
+.coins-row {
+  display: flex;
+  gap: 28px;
+  align-items: center;
+  justify-content: center;
+}
+
+.coin-wrapper {
+  cursor: pointer;
+  user-select: none;
+}
+
+.coin-wrapper.readonly { cursor: default; }
+
+.coin {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  overflow: hidden;
+  transition: filter 0.3s ease;
+}
+
+.coin img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.coin-wrapper.off .coin { filter: brightness(0.15); }
+
+/* ─── Player List ────────────────────────────────────── */
+
+.player-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.player-list li {
+  padding: 8px 14px;
+  border: 1px solid #222;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.player-list li.current-turn { border-color: #ff8c00; color: #ff8c00; }
+.player-list li.guessed-correct { opacity: 0.35; text-decoration: line-through; }
+.player-list li .badge { font-size: 11px; margin-left: auto; color: #555; }
+
+/* ─── Forbidden Numbers ──────────────────────────────── */
+
+.forbidden-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 360px;
+  justify-content: center;
+}
+
+.num-badge {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  border: 1px solid #333;
+  color: #333;
+}
+
+.num-badge.forbidden { border-color: #c0392b; color: #c0392b; text-decoration: line-through; }
+
+/* ─── Timer ──────────────────────────────────────────── */
+
+.timer-bar-wrap {
+  width: 200px;
+  height: 6px;
+  background: #222;
+  overflow: hidden;
+}
+
+.timer-bar {
+  height: 100%;
+  background: #ff8c00;
+  width: 100%;
+  transform-origin: left;
+}
+
+.timer-bar.running {
+  animation: shrink 5s linear forwards;
+}
+
+@keyframes shrink {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
+/* ─── Reveal ─────────────────────────────────────────── */
+
+.reveal-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid #222;
+  min-width: 120px;
+}
+
+.reveal-card .player-name { font-size: 13px; color: #aaa; }
+.reveal-card.loser { border-color: #c0392b; }
+.reveal-card.loser .player-name { color: #c0392b; }
+.reveal-card.winner { border-color: #27ae60; }
+.reveal-card.winner .player-name { color: #27ae60; }
+
+/* ─── Misc ───────────────────────────────────────────── */
+
+h1 { font-size: 28px; letter-spacing: 2px; color: #ff8c00; }
+h2 { font-size: 20px; color: #aaa; font-weight: normal; }
+
+.gap-sm { gap: 12px; }
+.gap-md { gap: 24px; }
+.gap-lg { gap: 40px; }
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.status-msg {
+  font-size: 13px;
+  color: #555;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.highlight { color: #ff8c00; }
+.muted { color: #444; }
