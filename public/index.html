@@ -484,7 +484,7 @@
       // Animate coins player by player, 1s pause between players
       const counterEl = document.getElementById('totalCoins');
       const labelEl = document.querySelector('.reveal-total-label');
-      let delay = 100;
+      let delay = 1100;
       let counter = 0;
       playerCoinEls.forEach((group, pi) => {
         if (pi > 0) delay += 1000;
@@ -494,15 +494,18 @@
           labelEl.textContent = playerName;
           labelEl.style.color = '#ff8c00';
         }, delay);
-        group.forEach(coin => {
+        group.forEach((coin, ci) => {
+          const isLast = ci === group.length - 1;
           setTimeout(() => {
             coin.classList.add('visible');
             sounds.coin();
             counter++;
-            counterEl.textContent = counter;
-            counterEl.classList.remove('counter-bump');
-            void counterEl.offsetWidth;
-            counterEl.classList.add('counter-bump');
+            if (isLast) {
+              counterEl.textContent = counter;
+              counterEl.classList.remove('counter-bump');
+              void counterEl.offsetWidth;
+              counterEl.classList.add('counter-bump');
+            }
           }, delay);
           delay += 500;
         });
