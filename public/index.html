@@ -17,18 +17,12 @@
     .coin-checkbox-row { display: flex; align-items: center; gap: 20px; }
     .checkbox-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
     .checkbox-wrap label { font-size: 12px; color: #555; letter-spacing: 1px; text-transform: uppercase; }
-    #lockCheckbox {
+    #lockCheckbox, #guessCheckbox, #joinCheckbox, #startCheckbox {
       width: 28px; height: 28px; cursor: pointer;
       accent-color: #ff8c00;
     }
-    #lockCheckbox:disabled { cursor: default; opacity: 0.4; }
+    #lockCheckbox:disabled, #guessCheckbox:disabled { cursor: default; opacity: 0.4; }
 
-    .check-list { list-style: none; display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 280px; }
-    .check-list li { font-size: 14px; color: #555; display: flex; align-items: center; gap: 8px; }
-    .check-list li.checked { color: #27ae60; }
-    .check-list li.spectator { color: #333; font-style: italic; }
-    .check-dot { width: 8px; height: 8px; border-radius: 50%; background: #333; flex-shrink: 0; }
-    .check-list li.checked .check-dot { background: #27ae60; }
     .check-count { font-size: 13px; color: #555; }
     .spectator-banner { font-size: 13px; color: #555; letter-spacing: 2px; text-transform: uppercase; padding: 8px 16px; border: 1px solid #333; }
 
@@ -79,7 +73,10 @@
   <div id="screen-login" class="screen active">
     <h1>KNOBELN</h1>
     <input id="nameInput" class="input-underline name-input" type="text" placeholder="Player" maxlength="20" autocomplete="off">
-    <button class="btn" onclick="join()">BEITRETEN</button>
+    <div class="checkbox-wrap">
+      <input type="checkbox" id="joinCheckbox" onchange="onJoinCheckboxChange()">
+      <label for="joinCheckbox">Bereit</label>
+    </div>
   </div>
 
   <!-- LOBBY -->
@@ -88,7 +85,10 @@
     <h2>Lobby</h2>
     <ul id="playerList" class="player-list"></ul>
     <span id="playerCount" class="player-count"></span>
-    <button id="startBtn" class="btn" onclick="startGame()" style="display:none" disabled>SPIEL STARTEN</button>
+    <div class="checkbox-wrap" id="startBtnWrap" style="display:none">
+      <input type="checkbox" id="startCheckbox" onchange="onStartCheckboxChange()">
+      <label for="startCheckbox">Bereit</label>
+    </div>
   </div>
 
   <!-- LOADING: Münzen wählen + Checkbox -->
@@ -107,13 +107,17 @@
     </div>
 
     <div id="spectatorBanner" class="spectator-banner" style="display:none">Du schaust zu</div>
-    <ul id="checkList" class="check-list"></ul>
+    <ul id="checkList" class="player-list"></ul>
     <div class="check-count" id="checkCount"></div>
   </div>
 
   <!-- GUESSING: Reihum tippen -->
   <div id="screen-guessing" class="screen">
     <h1>TIPPEN</h1>
+    <div class="checkbox-wrap" id="guessBtnWrap">
+      <input type="checkbox" id="guessCheckbox" onchange="onGuessCheckboxChange()" disabled>
+      <label for="guessCheckbox">Bereit</label>
+    </div>
     <div class="coins-row" id="guessingCoins">
       <div class="coin-wrapper readonly"><div class="coin"><img src="coin.png" alt="coin"></div></div>
       <div class="coin-wrapper readonly"><div class="coin"><img src="coin.png" alt="coin"></div></div>
@@ -121,8 +125,7 @@
     </div>
     <div class="whose-turn" id="whoseTurn">Warte...</div>
     <input id="guessInput" type="number" min="0" max="99" placeholder="?" disabled>
-    <button class="btn" id="guessBtn" onclick="submitGuess()" disabled>TIPPEN</button>
-    <ul class="turn-order" id="turnOrder"></ul>
+    <ul class="player-list" id="turnOrder"></ul>
   </div>
 
   <!-- REVEAL -->
@@ -133,10 +136,8 @@
       <div class="reveal-total-label">GESAMT</div>
       <div class="total-coins-big" id="totalCoins">0</div>
     </div>
-    <ul class="turn-order" id="revealTurnOrder"></ul>
+    <ul class="player-list" id="revealTurnOrder"></ul>
     <div id="revealCorrectMsg" style="display:none;align-self:center;text-align:center;font-size:15px;color:#27ae60;letter-spacing:1px;opacity:0;transition:opacity 0.4s ease;"></div>
-    <div class="waiting-msg" id="revealWaiting" style="display:none;align-self:center">Warte auf Host...</div>
-    <button class="btn" id="nextRoundBtn" style="display:none;align-self:center" onclick="nextRound()">NÄCHSTE RUNDE</button>
   </div>
 
   <!-- FINISHED -->
@@ -199,8 +200,17 @@
     socket.on('connect', () => { myId = socket.id; });
 
     document.getElementById('nameInput').addEventListener('keydown', e => {
-      if (e.key === 'Enter') join();
+      if (e.key === 'Enter') { document.getElementById('joinCheckbox').checked = true; onJoinCheckboxChange(); }
     });
+
+    function onJoinCheckboxChange() {
+      const cb = document.getElementById('joinCheckbox');
+      if (!cb.checked) return;
+      const name = document.getElementById('nameInput').value.trim();
+      if (!name) { cb.checked = false; return; }
+      cb.disabled = true;
+      join();
+    }
 
     function join() {
       const name = document.getElementById('nameInput').value.trim();
@@ -225,10 +235,19 @@
       });
       document.getElementById('playerCount').textContent = `${players.length} Spieler verbunden`;
 
-      const btn = document.getElementById('startBtn');
-      btn.style.display = isHost ? '' : 'none';
-      btn.disabled = players.length < 2;
+      const wrap = document.getElementById('startBtnWrap');
+      const cb = document.getElementById('startCheckbox');
+      wrap.style.display = isHost ? '' : 'none';
+      cb.disabled = players.length < 2;
+      cb.checked = false;
     });
+
+    function onStartCheckboxChange() {
+      const cb = document.getElementById('startCheckbox');
+      if (!cb.checked) return;
+      cb.disabled = true;
+      startGame();
+    }
 
     function startGame() { socket.emit('host:startGame'); }
 
@@ -252,8 +271,22 @@
 
         document.getElementById('spectatorBanner').style.display = amSpectator ? '' : 'none';
         document.getElementById('loadingHint').style.display = amSpectator ? 'none' : '';
-        document.getElementById('checkList').innerHTML = '';
-        document.getElementById('checkCount').textContent = '';
+
+        const total = players.filter(p => !p.isSpectator).length;
+        document.getElementById('checkCount').textContent = `0 / ${total} bereit`;
+        const list = document.getElementById('checkList');
+        list.innerHTML = '';
+        players.forEach(p => {
+          const li = document.createElement('li');
+          if (p.isSpectator) {
+            li.classList.add('guessed-correct');
+            li.innerHTML = `${p.name}${p.id === myId ? ' (du)' : ''}<span class="badge">Zuschauer</span>`;
+          } else {
+            li.style.opacity = '0.4';
+            li.innerHTML = `${p.name}${p.id === myId ? ' (du)' : ''}<span class="badge">...</span>`;
+          }
+          list.appendChild(li);
+        });
         show('screen-loading');
       }
 
@@ -261,10 +294,8 @@
         turnOrderData = turnOrder || [];
         renderTurnOrder(null);
         document.getElementById('guessInput').value = '';
-        document.getElementById('guessInput').disabled = true;
-        document.getElementById('guessBtn').disabled = true;
-        document.getElementById('guessInput').style.display = amSpectator ? 'none' : '';
-        document.getElementById('guessBtn').style.display = amSpectator ? 'none' : '';
+        document.getElementById('guessInput').style.display = 'none';
+        document.getElementById('guessBtnWrap').style.display = 'none';
         // Show own coins (read-only)
         document.querySelectorAll('#guessingCoins .coin-wrapper').forEach((w, i) => {
           w.classList.toggle('off', !coinStates[i]);
@@ -284,11 +315,11 @@
       players.forEach(p => {
         const li = document.createElement('li');
         if (p.isSpectator) {
-          li.classList.add('spectator');
-          li.innerHTML = `<span class="check-dot"></span>${p.name}${p.id === myId ? ' (du)' : ''} — zuschauer`;
+          li.classList.add('guessed-correct');
+          li.innerHTML = `${p.name}${p.id === myId ? ' (du)' : ''}<span class="badge">Zuschauer</span>`;
         } else {
-          if (p.isChecked) li.classList.add('checked');
-          li.innerHTML = `<span class="check-dot"></span>${p.name}${p.id === myId ? ' (du)' : ''}`;
+          if (!p.isChecked) li.style.opacity = '0.4';
+          li.innerHTML = `${p.name}${p.id === myId ? ' (du)' : ''}<span class="badge">${p.isChecked ? '✓' : '...'}</span>`;
         }
         list.appendChild(li);
       });
@@ -329,9 +360,13 @@
         ? '<span>Du bist dran!</span>'
         : `Dran: <span>${playerName}</span>`;
 
-      document.getElementById('guessInput').disabled = !isMe;
-      document.getElementById('guessBtn').disabled = !isMe;
-      if (isMe) { document.getElementById('guessInput').value = ''; document.getElementById('guessInput').focus(); }
+      const showInput = isMe && !amSpectator;
+      document.getElementById('guessInput').style.display = showInput ? '' : 'none';
+      document.getElementById('guessInput').disabled = !showInput;
+      document.getElementById('guessBtnWrap').style.display = showInput ? '' : 'none';
+      document.getElementById('guessCheckbox').disabled = !showInput;
+      document.getElementById('guessCheckbox').checked = false;
+      if (showInput) { document.getElementById('guessInput').value = ''; document.getElementById('guessInput').focus(); }
 
       document.getElementById('guessInput').style.borderBottomColor = '';
 
@@ -343,14 +378,20 @@
       renderTurnOrder(null);
     });
 
+    function onGuessCheckboxChange() {
+      const cb = document.getElementById('guessCheckbox');
+      if (!cb.checked) return;
+      submitGuess();
+    }
+
     function submitGuess() {
       const val = parseInt(document.getElementById('guessInput').value);
-      if (isNaN(val)) return;
-      if (forbiddenNumber !== null && val === forbiddenNumber) return;
+      if (isNaN(val)) { document.getElementById('guessCheckbox').checked = false; return; }
+      if (forbiddenNumber !== null && val === forbiddenNumber) { document.getElementById('guessCheckbox').checked = false; return; }
       sounds.coin();
       socket.emit('player:guess', { number: val });
       document.getElementById('guessInput').disabled = true;
-      document.getElementById('guessBtn').disabled = true;
+      document.getElementById('guessCheckbox').disabled = true;
     }
 
     document.getElementById('guessInput').addEventListener('keydown', e => {
@@ -379,11 +420,11 @@
       const val = parseInt(input.value);
       const isForbidden = forbiddenNumber !== null && val === forbiddenNumber;
       input.style.borderBottomColor = isForbidden ? '#c0392b' : '';
-      document.getElementById('guessBtn').disabled = isForbidden || input.disabled;
+      document.getElementById('guessCheckbox').disabled = isForbidden || input.disabled;
     }
 
     document.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !document.getElementById('guessBtn').disabled) submitGuess();
+      if (e.key === 'Enter' && !document.getElementById('guessCheckbox').disabled) submitGuess();
     });
 
     function renderTurnOrder(currentId) {
@@ -391,10 +432,10 @@
       list.innerHTML = '';
       turnOrderData.forEach(p => {
         const li = document.createElement('li');
-        if (p.done) li.classList.add('done');
-        else if (p.id === currentId) li.classList.add('active-turn');
-        const guessText = p.done ? ` ${p.guess}` : '';
-        li.innerHTML = `${p.name}${p.id === myId ? ' (du)' : ''}<span class="g-val">${guessText}</span>`;
+        if (p.id === currentId) li.classList.add('current-turn');
+        else if (!p.done) li.style.opacity = '0.4';
+        const badge = p.done ? `<span class="badge">${p.guess}</span>` : '';
+        li.innerHTML = `${p.name}${p.id === myId ? ' (du)' : ''}${badge}`;
         list.appendChild(li);
       });
     }
@@ -403,8 +444,6 @@
     socket.on('game:reveal', ({ coinsPerPlayer, totalCoins, correctGuessers, loserIds, remaining }) => {
       show('screen-reveal');
       document.getElementById('totalCoins').textContent = '0';
-      document.getElementById('nextRoundBtn').style.display = 'none';
-      document.getElementById('revealWaiting').style.display = 'none';
 
       // Build flat coin grid grouped by player
       const grid = document.getElementById('revealCoinsGrid');
@@ -437,9 +476,8 @@
       revealList.innerHTML = '';
       turnOrderData.forEach(p => {
         const li = document.createElement('li');
-        li.classList.add('done');
         li.dataset.id = p.id;
-        li.innerHTML = `${p.name}${p.id === myId ? ' (du)' : ''}<span class="g-val"> ${p.guess}</span>`;
+        li.innerHTML = `${p.name}${p.id === myId ? ' (du)' : ''}<span class="badge">${p.guess}</span>`;
         revealList.appendChild(li);
       });
 
@@ -476,8 +514,7 @@
         sounds.total();
         revealList.querySelectorAll('li').forEach(li => {
           if (correctGuessers.includes(li.dataset.id)) {
-            li.style.color = '#444';
-            li.querySelector('.g-val').style.color = '#444';
+            li.classList.add('guessed-correct');
           }
         });
       }, delay);
@@ -500,17 +537,14 @@
         msgEl.style.opacity = '1';
       }, delay + 200);
 
-      setTimeout(() => {
-        if (remaining > 1) {
-          if (isHost) document.getElementById('nextRoundBtn').style.display = '';
-          else document.getElementById('revealWaiting').style.display = '';
-        }
-      }, delay + 600);
+      if (remaining > 1 && isHost) {
+        setTimeout(() => nextRound(), delay + 2000);
+      }
     });
 
     // ── Finished ───────────────────────────────────────────
     socket.on('game:finished', ({ loserName }) => {
-      const waitMs = Math.max(0, revealAnimationEndsAt - Date.now());
+      const waitMs = Math.max(2000, revealAnimationEndsAt - Date.now() + 2000);
       setTimeout(() => {
       show('screen-finished');
       sounds.loser();

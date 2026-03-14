@@ -16,6 +16,9 @@ const state = {
   players: new Map(),
   joinOrder: [],    // socketIds in join order — fixed for the whole game
   turnIndex: 0,
+  roundStartOffset: 0,
+  roundTurnOrder: [],  // rotated active player IDs for current round
+  nextRoundStartId: null, // loser of last round starts next
 };
 
 function createPlayer(id, name) {
@@ -69,26 +72,38 @@ function startGuessing() {
   const total = getActive().reduce((sum, p) => sum + (p.coinsLoaded || 0), 0);
   console.log(`Münzen gesamt: ${total}`);
 
-  // Turn order = join order, skip spectators
+  // Loser of last round starts; otherwise rotate
   const active = getActive();
+  let offset = state.roundStartOffset % active.length;
+  if (state.nextRoundStartId) {
+    const idx = active.findIndex(p => p.id === state.nextRoundStartId);
+    if (idx !== -1) offset = idx;
+  }
+  state.nextRoundStartId = null;
+  const rotated = [...active.slice(offset), ...active.slice(0, offset)];
+  state.roundTurnOrder = rotated.map(p => p.id);
+  state.roundStartOffset = (offset + 1) % active.length;
 
   io.emit('game:phaseChange', {
     phase: 'guessing',
-    turnOrder: active.map(p => ({ id: p.id, name: p.name })),
+    turnOrder: rotated.map(p => ({ id: p.id, name: p.name })),
   });
 
   advanceTurn();
 }
 
 function advanceTurn() {
-  const active = getActive().filter(p => p.guess === null);
-  if (active.length === 0) { doReveal(); return; }
+  const activeIds = new Set(getActive().map(p => p.id));
+  const remaining = state.roundTurnOrder
+    .map(id => state.players.get(id))
+    .filter(p => p && activeIds.has(p.id) && p.guess === null);
+  if (remaining.length === 0) { doReveal(); return; }
 
-  const current = active[0];
+  const current = remaining[0];
 
   // If last player: forbid the number if all previous guesses are identical
   let forbiddenNumber = null;
-  if (active.length === 1) {
+  if (remaining.length === 1) {
     const previous = getActive().filter(p => p.guess !== null).map(p => p.guess);
     if (previous.length > 0 && previous.every(g => g === previous[0])) {
       forbiddenNumber = previous[0];
@@ -122,6 +137,7 @@ function doReveal() {
 
   if (remaining <= 1) {
     const loser = getActive()[0] || null;
+    if (loser) state.nextRoundStartId = loser.id;
     setTimeout(() => {
       state.phase = 'finished';
       io.emit('game:finished', { loserId: loser?.id || null, loserName: loser?.name || '?' });
@@ -178,9 +194,12 @@ io.on('connection', (socket) => {
     const player = state.players.get(socket.id);
     if (!player || player.isSpectator || player.guess !== null) return;
 
-    // Must be their turn
-    const active = getActive().filter(p => p.guess === null);
-    if (!active.length || active[0].id !== socket.id) return;
+    // Must be their turn (use rotated round order)
+    const activeIds = new Set(getActive().map(p => p.id));
+    const remaining = state.roundTurnOrder
+      .map(id => state.players.get(id))
+      .filter(p => p && activeIds.has(p.id) && p.guess === null);
+    if (!remaining.length || remaining[0].id !== socket.id) return;
 
     const g = parseInt(number);
     if (isNaN(g) || g < 0) return;
@@ -208,6 +227,7 @@ io.on('connection', (socket) => {
     const player = state.players.get(socket.id);
     if (!player?.isHost) return;
     for (const p of state.players.values()) p.isSpectator = false;
+    state.roundStartOffset = 0;
     startLoading();
   });
 
