@@ -19,6 +19,10 @@ const state = {
   roundStartOffset: 0,
   roundTurnOrder: [],  // rotated active player IDs for current round
   nextRoundStartId: null, // loser of last round starts next
+  // Rundenmodus
+  roundMode: false,
+  currentRound: 1,  // 1 | 2 | 'final'
+  roundLosers: [],  // [{id, name}, ...]
 };
 
 function createPlayer(id, name) {
@@ -38,14 +42,14 @@ function getActive()   { return state.joinOrder.map(id => state.players.get(id))
 
 function broadcastLobby() {
   io.emit('lobby:update', {
-    players: getPlayers().map(p => ({ id: p.id, name: p.name, isHost: p.isHost, isSpectator: p.isSpectator })),
+    players: getPlayers().map(p => ({ id: p.id, name: p.name, isHost: p.isHost, isSpectator: p.isSpectator, guessedCorrect: p.guessedCorrect || false })),
     hostId: getPlayers().find(p => p.isHost)?.id || null,
   });
 }
 
 function broadcastCheckState() {
   io.emit('game:checkUpdate', {
-    players: getPlayers().map(p => ({ id: p.id, name: p.name, isChecked: p.isChecked, isSpectator: p.isSpectator })),
+    players: getPlayers().map(p => ({ id: p.id, name: p.name, isChecked: p.isChecked, isSpectator: p.isSpectator, guessedCorrect: p.guessedCorrect || false })),
   });
 }
 
@@ -60,9 +64,13 @@ function startLoading() {
     p.guess = null;
   }
 
+  const lastLoser = state.roundLosers.length > 0 ? state.roundLosers[state.roundLosers.length - 1] : null;
   io.emit('game:phaseChange', {
     phase: 'loading',
-    players: getPlayers().map(p => ({ id: p.id, name: p.name, isSpectator: p.isSpectator })),
+    players: getPlayers().map(p => ({ id: p.id, name: p.name, isSpectator: p.isSpectator, guessedCorrect: p.guessedCorrect || false })),
+    roundMode: state.roundMode,
+    currentRound: state.currentRound,
+    lastLoserName: lastLoser?.name || null,
   });
 }
 
@@ -127,21 +135,66 @@ function doReveal() {
   // Eliminate correct guessers
   correctGuessers.forEach(id => {
     const p = state.players.get(id);
-    if (p) p.isSpectator = true;
+    if (p) { p.isSpectator = true; p.guessedCorrect = true; }
   });
 
   const remaining = getActive().length;
+
+  // Animationsdauer berechnen (gleiche Logik wie Client)
+  const nonSpectEntries = Object.values(coinsPerPlayer).filter(d => !d.isSpectator);
+  const animMs = 1100
+    + Math.max(0, nonSpectEntries.length - 1) * 1000
+    + nonSpectEntries.reduce((s, d) => s + (d.coins || 0), 0) * 500
+    + 200;
+  const revealShowMs = animMs + 3000; // Animation + 3s lesen
 
   state.phase = 'reveal';
   io.emit('game:reveal', { coinsPerPlayer, totalCoins, correctGuessers, loserIds, remaining });
 
   if (remaining <= 1) {
     const loser = getActive()[0] || null;
-    if (loser) state.nextRoundStartId = loser.id;
-    setTimeout(() => {
-      state.phase = 'finished';
-      io.emit('game:finished', { loserId: loser?.id || null, loserName: loser?.name || '?' });
-    }, 1500);
+    if (loser) {
+      state.nextRoundStartId = loser.id;
+      state.roundLosers.push({ id: loser.id, name: loser.name });
+    }
+
+    if (state.roundMode && state.currentRound !== 'final') {
+      // Runde 1 → Runde 2, oder Runde 2 → Endspiel
+      setTimeout(() => {
+        for (const p of state.players.values()) { p.isSpectator = false; p.guessedCorrect = false; }
+        if (state.currentRound === 1) {
+          state.currentRound = 2;
+          startLoading();
+        } else {
+          // Endspiel: nur die zwei Rundenverlierer spielen
+          state.currentRound = 'final';
+          state.nextRoundStartId = state.roundLosers[0].id; // Verlierer Runde 1 rät zuerst
+          const loserIds = new Set(state.roundLosers.map(l => l.id));
+          for (const p of state.players.values()) {
+            if (!loserIds.has(p.id)) p.isSpectator = true;
+          }
+          startLoading();
+        }
+      }, revealShowMs);
+    } else {
+      setTimeout(() => {
+        state.phase = 'finished';
+        io.emit('game:finished', { loserId: loser?.id || null, loserName: loser?.name || '?' });
+        setTimeout(() => {
+          for (const p of state.players.values()) { p.isSpectator = false; p.guessedCorrect = false; }
+          state.roundStartOffset = 0;
+          state.nextRoundStartId = null;
+          state.roundMode = false;
+          state.currentRound = 1;
+          state.roundLosers = [];
+          state.phase = 'lobby';
+          broadcastLobby();
+          io.emit('game:backToLobby');
+        }, 5000);
+      }, revealShowMs);
+    }
+  } else {
+    setTimeout(() => startLoading(), revealShowMs);
   }
 }
 
@@ -162,17 +215,20 @@ io.on('connection', (socket) => {
     } else {
       // Only update the new spectator, don't disturb the running game
       socket.emit('lobby:update', {
-        players: getPlayers().map(p => ({ id: p.id, name: p.name, isHost: p.isHost, isSpectator: p.isSpectator })),
+        players: getPlayers().map(p => ({ id: p.id, name: p.name, isHost: p.isHost, isSpectator: p.isSpectator, guessedCorrect: p.guessedCorrect || false })),
         hostId: getPlayers().find(p => p.isHost)?.id || null,
       });
     }
   });
 
-  socket.on('host:startGame', () => {
+  socket.on('host:startGame', ({ roundMode } = {}) => {
     const player = state.players.get(socket.id);
     if (!player?.isHost) return;
     if (state.players.size < 2) return;
-    for (const p of state.players.values()) p.isSpectator = false;
+    for (const p of state.players.values()) { p.isSpectator = false; p.guessedCorrect = false; }
+    state.roundMode = !!roundMode;
+    state.currentRound = 1;
+    state.roundLosers = [];
     startLoading();
   });
 
@@ -226,21 +282,6 @@ io.on('connection', (socket) => {
     advanceTurn();
   });
 
-  socket.on('host:nextRound', () => {
-    const player = state.players.get(socket.id);
-    if (!player?.isHost || state.phase !== 'reveal') return;
-    startLoading();
-  });
-
-  socket.on('host:resetGame', () => {
-    const player = state.players.get(socket.id);
-    if (!player?.isHost) return;
-    for (const p of state.players.values()) p.isSpectator = false;
-    state.roundStartOffset = 0;
-    state.nextRoundStartId = null;
-    state.phase = 'lobby';
-    broadcastLobby();
-  });
 
   socket.on('disconnect', () => {
     const player = state.players.get(socket.id);

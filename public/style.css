@@ -95,6 +95,25 @@ body {
 
 #loadingCoins .coin-wrapper, #guessingCoins .coin-wrapper { width: 80px; height: 80px; }
 
+/* ─── Rundenmodus ────────────────────────────────────── */
+
+.round-badge {
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 0.1em;
+  color: #ff8c00;
+  border: 1px solid #ff8c00;
+  padding: 3px 10px;
+  border-radius: 2px;
+  margin-bottom: 4px;
+}
+
+.last-loser-info {
+  font-size: 13px;
+  color: #777;
+  margin-bottom: 8px;
+}
+
 /* ─── Player List ────────────────────────────────────── */
 
 .player-list {
@@ -116,7 +135,7 @@ body {
 }
 
 .player-list li.current-turn { border-color: #ff8c00; color: #ff8c00; }
-.player-list li.guessed-correct { opacity: 0.35; text-decoration: line-through; }
+.player-list li.guessed-correct { opacity: 0.35; }
 .player-list li .badge { font-size: 14px; margin-left: auto; color: #fff; }
 
 /* ─── Forbidden Numbers ──────────────────────────────── */
