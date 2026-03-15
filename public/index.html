@@ -107,11 +107,6 @@
     <h1>KNOBELN</h1>
     <h2>Lobby</h2>
     <ul id="playerList" class="player-list"></ul>
-    <span id="playerCount" class="player-count"></span>
-    <div class="checkbox-wrap" id="roundModeWrap" style="display:none">
-      <input type="checkbox" id="roundModeCheckbox">
-      <label for="roundModeCheckbox">Rundenmodus (2 Runden + Endspiel)</label>
-    </div>
     <div class="checkbox-wrap" id="startBtnWrap" style="display:none">
       <input type="checkbox" id="startCheckbox" onchange="onStartCheckboxChange()">
       <label for="startCheckbox">Bereit</label>
@@ -128,7 +123,6 @@
   <div id="screen-loading" class="screen">
     <h1>LADEN</h1>
     <div id="roundBadgeLoading" class="round-badge" style="display:none"></div>
-    <div id="lastLoserLoading" class="last-loser-info" style="display:none"></div>
     <div class="checkbox-wrap">
       <input type="checkbox" id="lockCheckbox" onchange="onCheckboxChange()">
       <label for="lockCheckbox">Bereit</label>
@@ -185,6 +179,11 @@
     <h1>KNOBELN</h1>
     <div class="status-msg">VERLIERER</div>
     <div class="loser-name-big" id="loserName">—</div>
+    <ul class="player-list" id="finishedPlayerList"></ul>
+    <div class="checkbox-wrap">
+      <input type="checkbox" id="restartCheckbox" onchange="onRestartCheckbox()">
+      <label for="restartCheckbox">O.K.</label>
+    </div>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
@@ -268,7 +267,7 @@
     }
 
     // ── Lobby ──────────────────────────────────────────────
-    socket.on('lobby:update', ({ players, hostId }) => {
+    socket.on('lobby:update', ({ players, hostId, youngestId }) => {
       if (!hasJoined) return;
       const me = players.find(p => p.id === myId);
       if (me) amSpectator = me.isSpectator || false;
@@ -280,34 +279,29 @@
       list.innerHTML = '';
       players.forEach(p => {
         const li = document.createElement('li');
-        li.textContent = p.name + (p.id === hostId ? ' 👑' : '');
+        li.textContent = p.name
+          + (p.id === hostId ? ' 👑' : '')
+          + (p.id === youngestId ? ' 🍼' : '');
         li.style.color = '#ffffff';
         list.appendChild(li);
       });
-      document.getElementById('playerCount').textContent = `${players.length} Spieler verbunden`;
 
       const wrap = document.getElementById('startBtnWrap');
       const cb = document.getElementById('startCheckbox');
       wrap.style.display = isHost ? '' : 'none';
       cb.disabled = players.length < 2;
       cb.checked = false;
-      document.getElementById('roundModeWrap').style.display = isHost ? '' : 'none';
     });
 
     function onStartCheckboxChange() {
       const cb = document.getElementById('startCheckbox');
       if (!cb.checked) return;
       cb.disabled = true;
-      startGame();
-    }
-
-    function startGame() {
-      const roundMode = document.getElementById('roundModeCheckbox').checked;
-      socket.emit('host:startGame', { roundMode });
+      socket.emit('host:startGame');
     }
 
     // ── Phase changes ──────────────────────────────────────
-    socket.on('game:phaseChange', ({ phase, players, turnOrder, roundMode, currentRound, lastLoserName }) => {
+    socket.on('game:phaseChange', ({ phase, players, turnOrder, roundMode, currentRound, lastLoserId }) => {
       if (phase === 'loading') {
         const me = players?.find(p => p.id === myId);
         amSpectator = me?.isSpectator || false;
@@ -319,14 +313,6 @@
         const badgeEl = document.getElementById('roundBadgeLoading');
         badgeEl.style.display = roundLabel ? '' : 'none';
         badgeEl.textContent = roundLabel || '';
-        const loserEl = document.getElementById('lastLoserLoading');
-        if (roundMode && lastLoserName) {
-          loserEl.style.display = '';
-          const prevRound = currentRound === 2 ? 'Runde 1' : currentRound === 'final' ? 'Runde 2' : null;
-          loserEl.textContent = prevRound ? `${lastLoserName} hat ${prevRound} verloren` : '';
-        } else {
-          loserEl.style.display = 'none';
-        }
 
         const cb = document.getElementById('lockCheckbox');
         cb.checked = false;
@@ -349,13 +335,14 @@
         list.innerHTML = '';
         players.forEach(p => {
           const li = document.createElement('li');
+          const poopMark = p.id === lastLoserId ? ' 💩' : '';
           if (p.isSpectator) {
             li.classList.add('guessed-correct');
             const badge = p.guessedCorrect ? '✓ Richtig geraten' : 'Wartet in Lobby';
-            li.innerHTML = `${p.name}${p.id === myId ? ' (du)' : ''}<span class="badge">${badge}</span>`;
+            li.innerHTML = `${p.name}${poopMark}${p.id === myId ? ' (du)' : ''}<span class="badge">${badge}</span>`;
           } else {
             li.style.opacity = '0.4';
-            li.innerHTML = `${p.name}${p.id === myId ? ' (du)' : ''}<span class="badge">...</span>`;
+            li.innerHTML = `${p.name}${poopMark}${p.id === myId ? ' (du)' : ''}<span class="badge">...</span>`;
           }
           list.appendChild(li);
         });
@@ -618,16 +605,37 @@
     });
 
     // ── Finished ───────────────────────────────────────────
-    socket.on('game:finished', ({ loserName }) => {
+    socket.on('game:finished', ({ loserName, players: finishedPlayers }) => {
       const waitMs = Math.max(2000, revealAnimationEndsAt - Date.now() + 2000);
       setTimeout(() => {
         show('screen-finished');
         sounds.loser();
         document.getElementById('loserName').textContent = loserName;
+        document.getElementById('restartCheckbox').checked = false;
+        document.getElementById('restartCheckbox').disabled = false;
+
+        const list = document.getElementById('finishedPlayerList');
+        list.innerHTML = '';
+        (finishedPlayers || []).forEach(p => {
+          const li = document.createElement('li');
+          li.innerHTML = `${p.name}${p.id === myId ? ' (du)' : ''}${p.drink ? `<span class="badge">${p.drink}</span>` : ''}`;
+          if (p.name === loserName) li.style.color = '#ff8c00';
+          list.appendChild(li);
+        });
       }, waitMs);
     });
 
-    socket.on('game:backToLobby', () => show('screen-lobby'));
+    socket.on('game:backToLobby', () => {
+      show('screen-lobby');
+    });
+
+    function onRestartCheckbox() {
+      const cb = document.getElementById('restartCheckbox');
+      if (!cb.checked) return;
+      cb.disabled = true;
+      socket.emit('game:restart');
+    }
+
   </script>
 </body>
 </html>

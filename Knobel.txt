@@ -1,0 +1,13 @@
+Name,Geburtstag,Lieblingsgetränk
+Alex,20.10.1961,Miro
+Oli,01.12.1965,Eierlikör
+Issi,08.07.1966,Eierlikör
+Otti,25.02.1965,Eierlikör
+Frank,24.09.1963,Sambucca
+Buddy,12.09.1965,Sambucca
+Ziesel,24.03.1963,Ramazotti
+Heiko,02.02.1964,Wein
+Manni,20.02.1963,Sambucca
+Stollo,18.07.1961,Eierlikör
+Butz,09.12.1966,Eierlikör
+Schbugge,16.08.1962,Veggia

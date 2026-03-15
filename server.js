@@ -2,12 +2,51 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json());
+
+const DB_FILE = path.join(__dirname, 'Knobel.txt');
+
+function readDB() {
+  const lines = fs.readFileSync(DB_FILE, 'utf8').split('\n').filter(l => l.trim());
+  return lines.slice(1).map(l => {
+    const [name, geburtstag, lieblingsgetraenk] = l.split(',');
+    return { name, geburtstag, lieblingsgetraenk };
+  });
+}
+
+function writeDB(entries) {
+  const lines = ['Name,Geburtstag,Lieblingsgetränk',
+    ...entries.map(e => `${e.name},${e.geburtstag},${e.lieblingsgetraenk}`)
+  ];
+  fs.writeFileSync(DB_FILE, lines.join('\n') + '\n', 'utf8');
+}
+
+app.get('/api/knobel', (req, res) => res.json(readDB()));
+
+app.post('/api/knobel', (req, res) => {
+  const { name, geburtstag, lieblingsgetraenk } = req.body;
+  if (!name) return res.status(400).json({ error: 'Name fehlt' });
+  const entries = readDB();
+  entries.push({ name, geburtstag: geburtstag || '', lieblingsgetraenk: lieblingsgetraenk || '' });
+  writeDB(entries);
+  res.json({ ok: true });
+});
+
+app.delete('/api/knobel/:index', (req, res) => {
+  const entries = readDB();
+  const i = parseInt(req.params.index);
+  if (isNaN(i) || i < 0 || i >= entries.length) return res.status(400).json({ error: 'Ungültiger Index' });
+  entries.splice(i, 1);
+  writeDB(entries);
+  res.json({ ok: true });
+});
 
 // ─── Game State ────────────────────────────────────────────────────────────────
 
@@ -40,10 +79,30 @@ function createPlayer(id, name) {
 function getPlayers()  { return Array.from(state.players.values()); }
 function getActive()   { return state.joinOrder.map(id => state.players.get(id)).filter(p => p && !p.isSpectator); }
 
+function getYoungestId() {
+  try {
+    const db = readDB();
+    let youngestId = null;
+    let youngestDate = null;
+    for (const p of state.players.values()) {
+      const entry = db.find(e => e.name.toLowerCase() === p.name.toLowerCase());
+      if (!entry?.geburtstag) continue;
+      const [d, m, y] = entry.geburtstag.split('.').map(Number);
+      const date = new Date(y, m - 1, d);
+      if (!youngestDate || date > youngestDate) {
+        youngestDate = date;
+        youngestId = p.id;
+      }
+    }
+    return youngestId;
+  } catch (e) { return null; }
+}
+
 function broadcastLobby() {
   io.emit('lobby:update', {
     players: getPlayers().map(p => ({ id: p.id, name: p.name, isHost: p.isHost, isSpectator: p.isSpectator, guessedCorrect: p.guessedCorrect || false })),
     hostId: getPlayers().find(p => p.isHost)?.id || null,
+    youngestId: getYoungestId(),
   });
 }
 
@@ -70,7 +129,7 @@ function startLoading() {
     players: getPlayers().map(p => ({ id: p.id, name: p.name, isSpectator: p.isSpectator, guessedCorrect: p.guessedCorrect || false })),
     roundMode: state.roundMode,
     currentRound: state.currentRound,
-    lastLoserName: lastLoser?.name || null,
+    lastLoserId: lastLoser?.id || null,
   });
 }
 
@@ -165,10 +224,15 @@ function doReveal() {
         if (state.currentRound === 1) {
           state.currentRound = 2;
           startLoading();
+        } else if (state.roundLosers[0].id === state.roundLosers[1].id) {
+          // Gleicher Spieler hat beide Runden verloren → kein Endspiel
+          const loser = state.players.get(state.roundLosers[0].id) || state.roundLosers[0];
+          state.phase = 'finished';
+          io.emit('game:finished', { loserId: loser.id, loserName: loser.name, players: getFinishedPlayers() });
         } else {
           // Endspiel: nur die zwei Rundenverlierer spielen
           state.currentRound = 'final';
-          state.nextRoundStartId = state.roundLosers[0].id; // Verlierer Runde 1 rät zuerst
+          state.nextRoundStartId = state.roundLosers[0].id;
           const loserIds = new Set(state.roundLosers.map(l => l.id));
           for (const p of state.players.values()) {
             if (!loserIds.has(p.id)) p.isSpectator = true;
@@ -179,23 +243,34 @@ function doReveal() {
     } else {
       setTimeout(() => {
         state.phase = 'finished';
-        io.emit('game:finished', { loserId: loser?.id || null, loserName: loser?.name || '?' });
-        setTimeout(() => {
-          for (const p of state.players.values()) { p.isSpectator = false; p.guessedCorrect = false; }
-          state.roundStartOffset = 0;
-          state.nextRoundStartId = null;
-          state.roundMode = false;
-          state.currentRound = 1;
-          state.roundLosers = [];
-          state.phase = 'lobby';
-          broadcastLobby();
-          io.emit('game:backToLobby');
-        }, 5000);
+        io.emit('game:finished', { loserId: loser?.id || null, loserName: loser?.name || '?', players: getFinishedPlayers() });
       }, revealShowMs);
     }
   } else {
     setTimeout(() => startLoading(), revealShowMs);
   }
+}
+
+function getFinishedPlayers() {
+  const db = (() => { try { return readDB(); } catch (e) { return []; } })();
+  return getPlayers()
+    .filter(p => !p.isSpectator || p.guessedCorrect !== undefined)
+    .map(p => {
+      const entry = db.find(e => e.name.toLowerCase() === p.name.toLowerCase());
+      return { id: p.id, name: p.name, drink: entry?.lieblingsgetraenk || '' };
+    });
+}
+
+function resetToLobby() {
+  for (const p of state.players.values()) { p.isSpectator = false; p.guessedCorrect = false; }
+  state.roundStartOffset = 0;
+  state.nextRoundStartId = null;
+  state.roundMode = false;
+  state.currentRound = 1;
+  state.roundLosers = [];
+  state.phase = 'lobby';
+  broadcastLobby();
+  io.emit('game:backToLobby');
 }
 
 // ─── Socket Events ─────────────────────────────────────────────────────────────
@@ -221,14 +296,18 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('host:startGame', ({ roundMode } = {}) => {
+  socket.on('host:startGame', () => {
     const player = state.players.get(socket.id);
     if (!player?.isHost) return;
     if (state.players.size < 2) return;
     for (const p of state.players.values()) { p.isSpectator = false; p.guessedCorrect = false; }
-    state.roundMode = !!roundMode;
+    state.roundMode = true;
     state.currentRound = 1;
     state.roundLosers = [];
+
+    const youngestId = getYoungestId();
+    if (youngestId) state.nextRoundStartId = youngestId;
+
     startLoading();
   });
 
@@ -282,6 +361,10 @@ io.on('connection', (socket) => {
     advanceTurn();
   });
 
+
+  socket.on('game:restart', () => {
+    if (state.phase === 'finished') resetToLobby();
+  });
 
   socket.on('disconnect', () => {
     const player = state.players.get(socket.id);
