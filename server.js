@@ -38,7 +38,7 @@ function getActive()   { return state.joinOrder.map(id => state.players.get(id))
 
 function broadcastLobby() {
   io.emit('lobby:update', {
-    players: getPlayers().map(p => ({ id: p.id, name: p.name, isHost: p.isHost })),
+    players: getPlayers().map(p => ({ id: p.id, name: p.name, isHost: p.isHost, isSpectator: p.isSpectator })),
     hostId: getPlayers().find(p => p.isHost)?.id || null,
   });
 }
@@ -153,10 +153,19 @@ io.on('connection', (socket) => {
   socket.on('player:join', ({ name }) => {
     if (!name || name.trim() === '') return;
     const player = createPlayer(socket.id, name.trim());
+    if (state.phase !== 'lobby') player.isSpectator = true;
     state.players.set(socket.id, player);
     state.joinOrder.push(socket.id);
-    console.log(`${player.name} joined (host: ${player.isHost})`);
-    broadcastLobby();
+    console.log(`${player.name} joined (host: ${player.isHost}, spectator: ${player.isSpectator})`);
+    if (state.phase === 'lobby') {
+      broadcastLobby();
+    } else {
+      // Only update the new spectator, don't disturb the running game
+      socket.emit('lobby:update', {
+        players: getPlayers().map(p => ({ id: p.id, name: p.name, isHost: p.isHost, isSpectator: p.isSpectator })),
+        hostId: getPlayers().find(p => p.isHost)?.id || null,
+      });
+    }
   });
 
   socket.on('host:startGame', () => {
@@ -228,7 +237,9 @@ io.on('connection', (socket) => {
     if (!player?.isHost) return;
     for (const p of state.players.values()) p.isSpectator = false;
     state.roundStartOffset = 0;
-    startLoading();
+    state.nextRoundStartId = null;
+    state.phase = 'lobby';
+    broadcastLobby();
   });
 
   socket.on('disconnect', () => {
