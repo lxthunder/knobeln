@@ -62,6 +62,7 @@ const state = {
   roundMode: false,
   currentRound: 1,  // 1 | 2 | 'final'
   roundLosers: [],  // [{id, name}, ...]
+  durchgang: 0,     // Durchgang innerhalb einer Hauptrunde (1 = erster)
 };
 
 function createPlayer(id, name) {
@@ -116,6 +117,7 @@ function broadcastCheckState() {
 
 function startLoading() {
   state.phase = 'loading';
+  state.durchgang++;
 
   for (const p of state.players.values()) {
     p.coinsLoaded = null;
@@ -123,13 +125,12 @@ function startLoading() {
     p.guess = null;
   }
 
-  const lastLoser = state.roundLosers.length > 0 ? state.roundLosers[state.roundLosers.length - 1] : null;
   io.emit('game:phaseChange', {
     phase: 'loading',
     players: getPlayers().map(p => ({ id: p.id, name: p.name, isSpectator: p.isSpectator, guessedCorrect: p.guessedCorrect || false })),
     roundMode: state.roundMode,
     currentRound: state.currentRound,
-    lastLoserId: lastLoser?.id || null,
+    roundLoserIds: state.roundLosers.map(l => l.id),
   });
 }
 
@@ -154,6 +155,8 @@ function startGuessing() {
   io.emit('game:phaseChange', {
     phase: 'guessing',
     turnOrder: rotated.map(p => ({ id: p.id, name: p.name })),
+    roundMode: state.roundMode,
+    currentRound: state.currentRound,
   });
 
   advanceTurn();
@@ -187,15 +190,30 @@ function doReveal() {
     coinsPerPlayer[p.id] = { name: p.name, coins: p.coinsLoaded, guess: p.guess, isSpectator: p.isSpectator };
   }
 
-  const totalCoins = active.reduce((sum, p) => sum + (p.coinsLoaded || 0), 0);
-  const correctGuessers = active.filter(p => p.guess === totalCoins).map(p => p.id);
-  const loserIds = active.filter(p => p.guess !== totalCoins).map(p => p.id);
+  // Ausnahmeregel: erster Durchgang, nicht Endspiel → erster Spieler mit 0 Münzen verliert sofort die Runde
+  let ruleViolator = null;
+  if (state.durchgang === 1 && state.currentRound !== 'final') {
+    const first0 = state.joinOrder
+      .map(id => state.players.get(id))
+      .find(p => p && !p.isSpectator && p.coinsLoaded === 0);
+    if (first0) ruleViolator = { id: first0.id, name: first0.name };
+  }
 
-  // Eliminate correct guessers
-  correctGuessers.forEach(id => {
-    const p = state.players.get(id);
-    if (p) { p.isSpectator = true; p.guessedCorrect = true; }
-  });
+  const totalCoins = active.reduce((sum, p) => sum + (p.coinsLoaded || 0), 0);
+
+  // Regelverstoß hat Vorrang: Sieger-Ermittlung nur wenn kein Verstoß
+  let correctGuessers = [];
+  let loserIds = active.map(p => p.id);
+  if (!ruleViolator) {
+    correctGuessers = active.filter(p => p.guess === totalCoins).map(p => p.id);
+    loserIds = active.filter(p => p.guess !== totalCoins).map(p => p.id);
+
+    // Eliminate correct guessers
+    correctGuessers.forEach(id => {
+      const p = state.players.get(id);
+      if (p) { p.isSpectator = true; p.guessedCorrect = true; }
+    });
+  }
 
   const remaining = getActive().length;
 
@@ -208,7 +226,40 @@ function doReveal() {
   const revealShowMs = animMs + 3000; // Animation + 3s lesen
 
   state.phase = 'reveal';
-  io.emit('game:reveal', { coinsPerPlayer, totalCoins, correctGuessers, loserIds, remaining });
+  io.emit('game:reveal', { coinsPerPlayer, totalCoins, correctGuessers, loserIds, remaining, ruleViolatorId: ruleViolator?.id || null, ruleViolatorName: ruleViolator?.name || null });
+
+  // Regelverstoß: Rundenverlierer sofort festlegen, restliche Sub-Runden überspringen
+  if (ruleViolator) {
+    state.roundLosers.push({ id: ruleViolator.id, name: ruleViolator.name });
+    state.nextRoundStartId = ruleViolator.id;
+    setTimeout(() => {
+      for (const p of state.players.values()) { p.isSpectator = false; p.guessedCorrect = false; }
+      if (state.currentRound === 1) {
+        io.emit('game:announcement', { type: 'round1Loser', names: [ruleViolator.name] });
+        setTimeout(() => { state.currentRound = 2; state.durchgang = 0; startLoading(); }, 5000);
+      } else if (state.roundLosers[0].id === state.roundLosers[1].id) {
+        const loser = state.players.get(state.roundLosers[0].id) || state.roundLosers[0];
+        io.emit('game:announcement', { type: 'round2Loser', names: [loser.name] });
+        setTimeout(() => {
+          state.phase = 'finished';
+          io.emit('game:finished', { loserId: loser.id, loserName: loser.name, players: getFinishedPlayers() });
+        }, 5000);
+      } else {
+        io.emit('game:announcement', { type: 'finalStart', names: state.roundLosers.map(l => l.name) });
+        setTimeout(() => {
+          state.currentRound = 'final';
+          state.durchgang = 0;
+          state.nextRoundStartId = state.roundLosers[0].id;
+          const loserIds = new Set(state.roundLosers.map(l => l.id));
+          for (const p of state.players.values()) {
+            if (!loserIds.has(p.id)) p.isSpectator = true;
+          }
+          startLoading();
+        }, 5000);
+      }
+    }, revealShowMs);
+    return;
+  }
 
   if (remaining <= 1) {
     const loser = getActive()[0] || null;
@@ -222,28 +273,35 @@ function doReveal() {
       setTimeout(() => {
         for (const p of state.players.values()) { p.isSpectator = false; p.guessedCorrect = false; }
         if (state.currentRound === 1) {
-          state.currentRound = 2;
-          startLoading();
+          io.emit('game:announcement', { type: 'round1Loser', names: [loser?.name || '?'] });
+          setTimeout(() => { state.currentRound = 2; state.durchgang = 0; startLoading(); }, 5000);
         } else if (state.roundLosers[0].id === state.roundLosers[1].id) {
           // Gleicher Spieler hat beide Runden verloren → kein Endspiel
-          const loser = state.players.get(state.roundLosers[0].id) || state.roundLosers[0];
-          state.phase = 'finished';
-          io.emit('game:finished', { loserId: loser.id, loserName: loser.name, players: getFinishedPlayers() });
+          const l = state.players.get(state.roundLosers[0].id) || state.roundLosers[0];
+          io.emit('game:announcement', { type: 'round2Loser', names: [l.name] });
+          setTimeout(() => {
+            state.phase = 'finished';
+            io.emit('game:finished', { loserId: l.id, loserName: l.name, players: getFinishedPlayers() });
+          }, 5000);
         } else {
           // Endspiel: nur die zwei Rundenverlierer spielen
-          state.currentRound = 'final';
-          state.nextRoundStartId = state.roundLosers[0].id;
-          const loserIds = new Set(state.roundLosers.map(l => l.id));
-          for (const p of state.players.values()) {
-            if (!loserIds.has(p.id)) p.isSpectator = true;
-          }
-          startLoading();
+          io.emit('game:announcement', { type: 'finalStart', names: state.roundLosers.map(l => l.name) });
+          setTimeout(() => {
+            state.currentRound = 'final';
+            state.durchgang = 0;
+            state.nextRoundStartId = state.roundLosers[0].id;
+            const loserIds = new Set(state.roundLosers.map(l => l.id));
+            for (const p of state.players.values()) {
+              if (!loserIds.has(p.id)) p.isSpectator = true;
+            }
+            startLoading();
+          }, 5000);
         }
       }, revealShowMs);
     } else {
       setTimeout(() => {
         state.phase = 'finished';
-        io.emit('game:finished', { loserId: loser?.id || null, loserName: loser?.name || '?', players: getFinishedPlayers() });
+        io.emit('game:finished', { loserId: loser?.id || null, loserName: loser?.name || '?', players: getFinishedPlayers(), roundLoserIds: state.currentRound === 'final' ? state.roundLosers.map(l => l.id) : [] });
       }, revealShowMs);
     }
   } else {
@@ -268,6 +326,7 @@ function resetToLobby() {
   state.roundMode = false;
   state.currentRound = 1;
   state.roundLosers = [];
+  state.durchgang = 0;
   state.phase = 'lobby';
   broadcastLobby();
   io.emit('game:backToLobby');
@@ -280,7 +339,20 @@ io.on('connection', (socket) => {
 
   socket.on('player:join', ({ name }) => {
     if (!name || name.trim() === '') return;
-    const player = createPlayer(socket.id, name.trim());
+    let resolvedName = name.trim();
+
+    // Frank-Alias
+    if (['frank', 'franky', 'frankie', 'fusch'].includes(resolvedName.toLowerCase())) {
+      resolvedName = 'Frank Fischer';
+    } else {
+      // DB-Großschreibung übernehmen
+      try {
+        const entry = readDB().find(e => e.name.toLowerCase() === resolvedName.toLowerCase());
+        if (entry) resolvedName = entry.name;
+      } catch (e) {}
+    }
+
+    const player = createPlayer(socket.id, resolvedName);
     if (state.phase !== 'lobby') player.isSpectator = true;
     state.players.set(socket.id, player);
     state.joinOrder.push(socket.id);
@@ -304,6 +376,7 @@ io.on('connection', (socket) => {
     state.roundMode = true;
     state.currentRound = 1;
     state.roundLosers = [];
+  state.durchgang = 0;
 
     const youngestId = getYoungestId();
     if (youngestId) state.nextRoundStartId = youngestId;

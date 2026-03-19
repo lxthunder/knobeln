@@ -81,16 +81,90 @@
     .reveal-coin.visible { opacity: 1; transform: scale(1); }
     .reveal-coin img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .reveal-total-area { align-self: center; display: flex; flex-direction: column; align-items: center; margin-top: 16px; }
-    .reveal-total-label { color: #888; font-size: 13px; letter-spacing: 2px; margin-bottom: 6px; }
     .total-coins-big { font-size: 72px; font-weight: bold; color: #ffffff; line-height: 1; }
     .counter-bump { animation: bump 0.25s ease; }
     @keyframes bump { 0%,100% { transform: scale(1); } 50% { transform: scale(1.25); } }
 
+    /* Announcement */
+    #screen-announcement { justify-content: center; gap: 28px; }
+    .ann-label { font-size: 13px; color: #666; letter-spacing: 5px; text-transform: uppercase; }
+    .ann-names { font-size: 62px; font-weight: bold; color: #c0392b; line-height: 1.1; text-align: center; }
+    .ann-sub { font-size: 15px; color: #aaa; letter-spacing: 2px; text-align: center; }
+
+    .reveal-list-active { color: #ff8c00 !important; border-left: 2px solid #ff8c00; padding-left: 10px; }
+
     /* Finished */
-    .loser-name-big { font-size: 52px; font-weight: bold; color: #c0392b; }
+    .loser-name-big { font-size: 62px; font-weight: bold; color: #c0392b; }
+
+    /* Status Bar */
+    #status-bar {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 40px;
+      background: #111;
+      border-bottom: 1px solid #222;
+      z-index: 100;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      gap: 8px;
+    }
+    #status-bar.visible { display: flex; }
+    .sb-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+    }
+    .sb-label {
+      font-size: 9px;
+      color: #444;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      line-height: 1;
+    }
+    .sb-value {
+      font-size: 13px;
+      color: #fff;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100px;
+    }
+    #sb-action {
+      font-size: 26px;
+      max-width: none;
+    }
+    .sb-divider {
+      width: 1px;
+      height: 24px;
+      background: #222;
+    }
+    body.has-statusbar .screen { padding-top: 56px; }
   </style>
 </head>
 <body>
+
+  <!-- STATUS BAR -->
+  <div id="status-bar">
+    <div class="sb-item">
+      <span class="sb-label">Spieler</span>
+      <span class="sb-value" id="sb-player">—</span>
+    </div>
+    <div class="sb-divider"></div>
+    <div class="sb-item">
+      <span class="sb-label">Aktion</span>
+      <span class="sb-value" id="sb-action">—</span>
+    </div>
+    <div class="sb-divider"></div>
+    <div class="sb-item">
+      <span class="sb-label">Status</span>
+      <span class="sb-value" id="sb-status">—</span>
+    </div>
+  </div>
 
   <!-- LOGIN -->
   <div id="screen-login" class="screen active">
@@ -121,13 +195,10 @@
 
   <!-- LOADING: Münzen wählen + Checkbox -->
   <div id="screen-loading" class="screen">
-    <h1>LADEN</h1>
-    <div id="roundBadgeLoading" class="round-badge" style="display:none"></div>
     <div class="checkbox-wrap">
       <input type="checkbox" id="lockCheckbox" onchange="onCheckboxChange()">
       <label for="lockCheckbox">Bereit</label>
     </div>
-    <p id="loadingHint" style="color:#aaa;font-size:14px;">Wähle deine Münzen und bestätige</p>
 
     <div class="coins-row" id="loadingCoins">
       <div class="coin-wrapper" onclick="toggleCoin(0)"><div class="coin"><img src="coin.png" alt="coin"></div></div>
@@ -142,8 +213,6 @@
 
   <!-- GUESSING: Reihum tippen -->
   <div id="screen-guessing" class="screen">
-    <h1>TIPPEN</h1>
-    <div id="roundBadgeGuessing" class="round-badge" style="display:none"></div>
     <div class="checkbox-wrap" id="guessBtnWrap">
       <input type="checkbox" id="guessCheckbox" onchange="onGuessCheckboxChange()" disabled>
       <label for="guessCheckbox">Bereit</label>
@@ -153,7 +222,6 @@
       <div class="coin-wrapper readonly"><div class="coin"><img src="coin.png" alt="coin"></div></div>
       <div class="coin-wrapper readonly"><div class="coin"><img src="coin.png" alt="coin"></div></div>
     </div>
-    <div class="whose-turn" id="whoseTurn">Warte...</div>
     <div class="guess-row" id="guessRow">
       <button class="guess-adj-btn" id="guessDown" onclick="adjustGuess(-1)" disabled>−</button>
       <input id="guessInput" type="number" min="0" max="99" placeholder="?" disabled>
@@ -164,20 +232,24 @@
 
   <!-- REVEAL -->
   <div id="screen-reveal" class="screen">
-    <h1>ERGEBNIS</h1>
     <div class="reveal-coins-grid" id="revealCoinsGrid"></div>
     <div class="reveal-total-area">
-      <div class="reveal-total-label">GESAMT</div>
       <div class="total-coins-big" id="totalCoins">0</div>
     </div>
     <ul class="player-list" id="revealTurnOrder"></ul>
     <div id="revealCorrectMsg" style="display:none;align-self:center;text-align:center;font-size:15px;color:#27ae60;letter-spacing:1px;opacity:0;transition:opacity 0.4s ease;"></div>
   </div>
 
+  <!-- ANNOUNCEMENT -->
+  <div id="screen-announcement" class="screen">
+    <div class="ann-label" id="annLabel"></div>
+    <div class="ann-names" id="annNames"></div>
+    <div class="ann-sub" id="annSub"></div>
+  </div>
+
   <!-- FINISHED -->
   <div id="screen-finished" class="screen">
-    <h1>KNOBELN</h1>
-    <div class="status-msg">VERLIERER</div>
+    <div class="ann-label">VERLIERER</div>
     <div class="loser-name-big" id="loserName">—</div>
     <ul class="player-list" id="finishedPlayerList"></ul>
     <div class="checkbox-wrap">
@@ -237,6 +309,25 @@
     let turnOrderData = [];
     let revealAnimationEndsAt = 0;
     let forbiddenNumber = null;
+    let roundLoserIds = [];
+    let sbPlayerName = '—';
+    let sbAction = '—';
+    let sbStatus = '—';
+
+    function updateStatusBar(opts = {}) {
+      if (opts.player !== undefined) sbPlayerName = opts.player;
+      if (opts.action !== undefined) sbAction = opts.action;
+      if (opts.status !== undefined) sbStatus = opts.status;
+      document.getElementById('sb-player').textContent = sbPlayerName;
+      document.getElementById('sb-action').textContent = sbAction;
+      document.getElementById('sb-status').textContent = sbStatus;
+    }
+
+    function showStatusBar(visible) {
+      const bar = document.getElementById('status-bar');
+      bar.classList.toggle('visible', visible);
+      document.body.classList.toggle('has-statusbar', visible);
+    }
 
     function show(id) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -263,6 +354,7 @@
       const name = document.getElementById('nameInput').value.trim();
       if (!name) return;
       hasJoined = true;
+      updateStatusBar({ player: name, action: '—', status: '—' });
       socket.emit('player:join', { name });
     }
 
@@ -301,18 +393,22 @@
     }
 
     // ── Phase changes ──────────────────────────────────────
-    socket.on('game:phaseChange', ({ phase, players, turnOrder, roundMode, currentRound, lastLoserId }) => {
+    socket.on('game:phaseChange', ({ phase, players, turnOrder, roundMode, currentRound, roundLoserIds: incomingRoundLoserIds }) => {
+      if (incomingRoundLoserIds !== undefined) roundLoserIds = incomingRoundLoserIds;
+
+      // Status Bar
+      if (phase === 'loading' || phase === 'guessing') {
+        const roundLabel = !roundMode ? '—'
+          : currentRound === 'final' ? 'Endspiel'
+          : `Runde ${currentRound}`;
+        const actionLabel = phase === 'loading' ? 'Laden' : 'Tippen';
+        showStatusBar(true);
+        updateStatusBar({ action: actionLabel, status: roundLabel });
+      }
+
       if (phase === 'loading') {
         const me = players?.find(p => p.id === myId);
         amSpectator = me?.isSpectator || false;
-
-        // Rundenanzeige
-        const roundLabel = roundMode
-          ? (currentRound === 'final' ? 'ENDSPIEL' : `RUNDE ${currentRound} VON 2`)
-          : null;
-        const badgeEl = document.getElementById('roundBadgeLoading');
-        badgeEl.style.display = roundLabel ? '' : 'none';
-        badgeEl.textContent = roundLabel || '';
 
         const cb = document.getElementById('lockCheckbox');
         cb.checked = false;
@@ -327,7 +423,6 @@
         }
 
         document.getElementById('spectatorBanner').style.display = amSpectator ? '' : 'none';
-        document.getElementById('loadingHint').style.display = amSpectator ? 'none' : '';
 
         const total = players.filter(p => !p.isSpectator).length;
         document.getElementById('checkCount').textContent = `0 / ${total} bereit`;
@@ -335,7 +430,7 @@
         list.innerHTML = '';
         players.forEach(p => {
           const li = document.createElement('li');
-          const poopMark = p.id === lastLoserId ? ' 💩' : '';
+          const poopMark = roundLoserIds.includes(p.id) ? ' 💩' : '';
           if (p.isSpectator) {
             li.classList.add('guessed-correct');
             const badge = p.guessedCorrect ? '✓ Richtig geraten' : 'Wartet in Lobby';
@@ -361,14 +456,6 @@
             w.classList.toggle('off', !coinStates[i]);
           });
         }
-        // Rundenanzeige
-        const gBadge = document.getElementById('roundBadgeGuessing');
-        if (roundMode) {
-          gBadge.style.display = '';
-          gBadge.textContent = currentRound === 'final' ? 'ENDSPIEL' : `RUNDE ${currentRound} VON 2`;
-        } else {
-          gBadge.style.display = 'none';
-        }
         show('screen-guessing');
       }
     });
@@ -383,13 +470,14 @@
       list.innerHTML = '';
       players.forEach(p => {
         const li = document.createElement('li');
+        const poopMark = roundLoserIds.includes(p.id) ? ' 💩' : '';
         if (p.isSpectator) {
           li.classList.add('guessed-correct');
           const badge = p.guessedCorrect ? '✓ Richtig geraten' : 'Wartet in Lobby';
-          li.innerHTML = `${p.name}${p.id === myId ? ' (du)' : ''}<span class="badge">${badge}</span>`;
+          li.innerHTML = `${p.name}${poopMark}${p.id === myId ? ' (du)' : ''}<span class="badge">${badge}</span>`;
         } else {
           if (!p.isChecked) li.style.opacity = '0.4';
-          li.innerHTML = `${p.name}${p.id === myId ? ' (du)' : ''}<span class="badge">${p.isChecked ? '✓' : '...'}</span>`;
+          li.innerHTML = `${p.name}${poopMark}${p.id === myId ? ' (du)' : ''}<span class="badge">${p.isChecked ? '✓' : '...'}</span>`;
         }
         list.appendChild(li);
       });
@@ -426,9 +514,6 @@
     socket.on('game:turnStart', ({ playerId, playerName, forbiddenNumber: fn }) => {
       forbiddenNumber = fn ?? null;
       const isMe = playerId === myId;
-      document.getElementById('whoseTurn').innerHTML = isMe
-        ? '<span>Du bist dran!</span>'
-        : `Dran: <span>${playerName}</span>`;
 
       const showInput = isMe && !amSpectator;
       document.getElementById('guessRow').style.display = showInput ? 'flex' : 'none';
@@ -505,13 +590,15 @@
         if (p.id === currentId) li.classList.add('current-turn');
         else if (!p.done) li.style.opacity = '0.4';
         const badge = p.done ? `<span class="badge">${p.guess}</span>` : '';
-        li.innerHTML = `${p.name}${p.id === myId ? ' (du)' : ''}${badge}`;
+        const poopMark = roundLoserIds.includes(p.id) ? ' 💩' : '';
+        li.innerHTML = `${p.name}${poopMark}${p.id === myId ? ' (du)' : ''}${badge}`;
         list.appendChild(li);
       });
     }
 
     // ── Reveal ─────────────────────────────────────────────
-    socket.on('game:reveal', ({ coinsPerPlayer, totalCoins, correctGuessers, loserIds, remaining }) => {
+    socket.on('game:reveal', ({ coinsPerPlayer, totalCoins, correctGuessers, loserIds, remaining, ruleViolatorId, ruleViolatorName }) => {
+      updateStatusBar({ action: 'Ergebnis' });
       show('screen-reveal');
       document.getElementById('totalCoins').textContent = '0';
 
@@ -539,22 +626,22 @@
       turnOrderData.forEach(p => {
         const li = document.createElement('li');
         li.dataset.id = p.id;
-        li.innerHTML = `${p.name}${p.id === myId ? ' (du)' : ''}<span class="badge">${p.guess}</span>`;
+        const poopMark = roundLoserIds.includes(p.id) ? ' 💩' : '';
+        li.innerHTML = `${p.name}${poopMark}${p.id === myId ? ' (du)' : ''}<span class="badge">${p.guess}</span>`;
         revealList.appendChild(li);
       });
 
       // Animate coins player by player, 1s pause between players
       const counterEl = document.getElementById('totalCoins');
-      const labelEl = document.querySelector('.reveal-total-label');
       let delay = 1100;
       let counter = 0;
       playerCoinEls.forEach((group, pi) => {
         if (pi > 0) delay += 1000;
-        const playerName = entries[pi][1].name;
-        // Show player name at start of their group
+        const playerId = entries[pi][0];
         setTimeout(() => {
-          labelEl.textContent = playerName;
-          labelEl.style.color = '#ff8c00';
+          revealList.querySelectorAll('li').forEach(li => li.classList.remove('reveal-list-active'));
+          const activeRow = revealList.querySelector(`li[data-id="${playerId}"]`);
+          if (activeRow) activeRow.classList.add('reveal-list-active');
         }, delay);
         group.forEach((coin, ci) => {
           const isLast = ci === group.length - 1;
@@ -572,12 +659,10 @@
           delay += 500;
         });
       });
-      // Reset label to GESAMT + grau korrekte Spieler nach Animation
       setTimeout(() => {
-        labelEl.textContent = 'GESAMT';
-        labelEl.style.color = '';
         sounds.total();
         revealList.querySelectorAll('li').forEach(li => {
+          li.classList.remove('reveal-list-active');
           if (correctGuessers.includes(li.dataset.id)) {
             li.classList.add('guessed-correct');
           }
@@ -585,17 +670,23 @@
       }, delay);
       revealAnimationEndsAt = Date.now() + delay;
 
-      // Show correct guessers message
+      // Show message (Regelverstoß oder normale Auswertung)
       const msgEl = document.getElementById('revealCorrectMsg');
       msgEl.style.display = 'none';
       msgEl.style.opacity = '0';
       setTimeout(() => {
-        const names = correctGuessers.map(id => coinsPerPlayer[id]?.name).filter(Boolean);
-        if (names.length > 0) {
-          msgEl.textContent = names.join(', ') + (names.length === 1 ? ' hat richtig geraten!' : ' haben richtig geraten!');
-          sounds.correct();
+        if (ruleViolatorName) {
+          msgEl.textContent = `⚠️ ${ruleViolatorName} hatte keine Münze – Runde verloren!`;
+          msgEl.style.color = '#e74c3c';
         } else {
-          msgEl.textContent = 'Niemand hat richtig geraten.';
+          const names = correctGuessers.map(id => coinsPerPlayer[id]?.name).filter(Boolean);
+          if (names.length > 0) {
+            msgEl.textContent = names.join(', ') + (names.length === 1 ? ' hat richtig geraten!' : ' haben richtig geraten!');
+            sounds.correct();
+          } else {
+            msgEl.textContent = 'Niemand hat richtig geraten.';
+          }
+          msgEl.style.color = '';
         }
         msgEl.style.display = '';
         void msgEl.offsetWidth;
@@ -604,8 +695,23 @@
 
     });
 
+    // ── Announcement ───────────────────────────────────────
+    socket.on('game:announcement', ({ type, names }) => {
+      const labels = { round1Loser: 'RUNDE 1', round2Loser: 'RUNDE 2', finalStart: 'ENDSPIEL' };
+      const subs = {
+        round1Loser: 'verliert Runde 1',
+        round2Loser: 'verliert Runde 2',
+        finalStart: 'spielen das Endspiel',
+      };
+      document.getElementById('annLabel').textContent = labels[type] || '';
+      document.getElementById('annNames').innerHTML = names.map(n => `<div>${n}</div>`).join('');
+      document.getElementById('annSub').textContent = subs[type] || '';
+      show('screen-announcement');
+      sounds.loser();
+    });
+
     // ── Finished ───────────────────────────────────────────
-    socket.on('game:finished', ({ loserName, players: finishedPlayers }) => {
+    socket.on('game:finished', ({ loserId, loserName, players: finishedPlayers, roundLoserIds }) => {
       const waitMs = Math.max(2000, revealAnimationEndsAt - Date.now() + 2000);
       setTimeout(() => {
         show('screen-finished');
@@ -618,7 +724,9 @@
         list.innerHTML = '';
         (finishedPlayers || []).forEach(p => {
           const li = document.createElement('li');
-          li.innerHTML = `${p.name}${p.id === myId ? ' (du)' : ''}${p.drink ? `<span class="badge">${p.drink}</span>` : ''}`;
+          const isLoser = p.id === loserId || (roundLoserIds && roundLoserIds.includes(p.id));
+          const poopMark = isLoser ? ' 💩' : '';
+          li.innerHTML = `${p.name}${poopMark}${p.id === myId ? ' (du)' : ''}${p.drink ? `<span class="badge">${p.drink}</span>` : ''}`;
           if (p.name === loserName) li.style.color = '#ff8c00';
           list.appendChild(li);
         });
@@ -626,6 +734,7 @@
     });
 
     socket.on('game:backToLobby', () => {
+      showStatusBar(false);
       show('screen-lobby');
     });
 
