@@ -62,16 +62,9 @@
 
     /* Reveal */
     #screen-reveal { align-items: center; }
-    .reveal-coins-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      width: 320px;
-      max-width: 100%;
-    }
     .reveal-coin {
-      width: 32px;
-      height: 32px;
+      width: 28px;
+      height: 28px;
       flex-shrink: 0;
       border-radius: 50%;
       overflow: hidden;
@@ -80,6 +73,12 @@
     }
     .reveal-coin.visible { opacity: 1; transform: scale(1); }
     .reveal-coin img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .reveal-player-coins {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-left: auto;
+    }
     .reveal-total-area { align-self: center; display: flex; flex-direction: column; align-items: center; margin-top: 16px; }
     .total-coins-big { font-size: 72px; font-weight: bold; color: #ffffff; line-height: 1; }
     .counter-bump { animation: bump 0.25s ease; }
@@ -137,6 +136,7 @@
     #sb-action {
       font-size: 26px;
       max-width: none;
+      color: #ff8c00 !important;
     }
     .sb-divider {
       width: 1px;
@@ -232,7 +232,6 @@
 
   <!-- REVEAL -->
   <div id="screen-reveal" class="screen">
-    <div class="reveal-coins-grid" id="revealCoinsGrid"></div>
     <div class="reveal-total-area">
       <div class="total-coins-big" id="totalCoins">0</div>
     </div>
@@ -242,7 +241,6 @@
 
   <!-- ANNOUNCEMENT -->
   <div id="screen-announcement" class="screen">
-    <div class="ann-label" id="annLabel"></div>
     <div class="ann-names" id="annNames"></div>
     <div class="ann-sub" id="annSub"></div>
   </div>
@@ -602,33 +600,35 @@
       show('screen-reveal');
       document.getElementById('totalCoins').textContent = '0';
 
-      // Build flat coin grid grouped by player
-      const grid = document.getElementById('revealCoinsGrid');
-      grid.innerHTML = '';
-      const entries = Object.entries(coinsPerPlayer).filter(([, d]) => !d.isSpectator);
-      const playerCoinEls = []; // array of arrays, one per player
+      // Reihenfolge = Tippreihenfolge, Spektatoren ausfiltern
+      const entries = turnOrderData
+        .filter(p => coinsPerPlayer[p.id] && !coinsPerPlayer[p.id].isSpectator)
+        .map(p => [p.id, coinsPerPlayer[p.id]]);
 
-      entries.forEach(([, data]) => {
-        const group = [];
-        for (let i = 0; i < data.coins; i++) {
-          const coin = document.createElement('div');
-          coin.className = 'reveal-coin';
-          coin.innerHTML = '<img src="coin.png" alt="coin">';
-          grid.appendChild(coin);
-          group.push(coin);
-        }
-        playerCoinEls.push(group);
-      });
-
-      // Render turn order table (no gray yet)
+      // Render turn order list with coin containers per player
       const revealList = document.getElementById('revealTurnOrder');
       revealList.innerHTML = '';
       turnOrderData.forEach(p => {
         const li = document.createElement('li');
         li.dataset.id = p.id;
         const poopMark = roundLoserIds.includes(p.id) ? ' 💩' : '';
-        li.innerHTML = `${p.name}${poopMark}${p.id === myId ? ' (du)' : ''}<span class="badge">${p.guess}</span>`;
+        li.innerHTML = `<span>${p.name}${poopMark}${p.id === myId ? ' (du)' : ''}</span><div class="reveal-player-coins" id="coins-${p.id}"></div>`;
         revealList.appendChild(li);
+      });
+
+      // Build coin elements inside each player's row
+      const playerCoinEls = [];
+      entries.forEach(([pid, data]) => {
+        const container = document.getElementById(`coins-${pid}`);
+        const group = [];
+        for (let i = 0; i < data.coins; i++) {
+          const coin = document.createElement('div');
+          coin.className = 'reveal-coin';
+          coin.innerHTML = '<img src="coin.png" alt="coin">';
+          if (container) container.appendChild(coin);
+          group.push(coin);
+        }
+        playerCoinEls.push(group);
       });
 
       // Animate coins player by player, 1s pause between players
@@ -682,11 +682,12 @@
           const names = correctGuessers.map(id => coinsPerPlayer[id]?.name).filter(Boolean);
           if (names.length > 0) {
             msgEl.textContent = names.join(', ') + (names.length === 1 ? ' hat richtig geraten!' : ' haben richtig geraten!');
+            msgEl.style.color = '#27ae60';
             sounds.correct();
           } else {
             msgEl.textContent = 'Niemand hat richtig geraten.';
+            msgEl.style.color = '';
           }
-          msgEl.style.color = '';
         }
         msgEl.style.display = '';
         void msgEl.offsetWidth;
@@ -697,13 +698,11 @@
 
     // ── Announcement ───────────────────────────────────────
     socket.on('game:announcement', ({ type, names }) => {
-      const labels = { round1Loser: 'RUNDE 1', round2Loser: 'RUNDE 2', finalStart: 'ENDSPIEL' };
       const subs = {
         round1Loser: 'verliert Runde 1',
         round2Loser: 'verliert Runde 2',
         finalStart: 'spielen das Endspiel',
       };
-      document.getElementById('annLabel').textContent = labels[type] || '';
       document.getElementById('annNames').innerHTML = names.map(n => `<div>${n}</div>`).join('');
       document.getElementById('annSub').textContent = subs[type] || '';
       show('screen-announcement');
