@@ -185,6 +185,37 @@ sudo systemctl start wifi-check
 
 ---
 
+## 6. SD-Karte spiegeln (Backup)
+
+Nachdem alles läuft, sollte die SD-Karte gesichert werden – SD-Karten sind der häufigste Ausfallpunkt beim Pi.
+
+### Option A – Image direkt vom Pi erstellen (Pi bleibt an)
+
+```bash
+sudo dd if=/dev/mmcblk0 bs=4M status=progress | gzip > ~/knobelstatz_backup.img.gz
+```
+
+Das Image per SCP auf Windows kopieren:
+```bash
+scp bueffel@knobelserver:~/knobelstatz_backup.img.gz "C:/Users/afuchs/Desktop/"
+```
+
+### Option B – Image auf Windows erstellen (Pi ausschalten)
+
+```bash
+sudo shutdown -h now
+```
+
+SD-Karte rausnehmen und mit **Win32DiskImager** oder **Raspberry Pi Imager** als `.img` sichern.
+
+### Wiederherstellen
+
+```bash
+gunzip -c knobelstatz_backup.img.gz | sudo dd of=/dev/mmcblk0 bs=4M status=progress
+```
+
+---
+
 ## Ergebnis
 
 | Situation | Verhalten |
