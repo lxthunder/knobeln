@@ -1,7 +1,19 @@
 #!/bin/bash
 # =============================================================================
 # Knobelstatz Pi Setup Script
-# Führe dieses Script auf dem Pi aus: bash ~/knobelstatz/setup_pi.sh
+#
+# Vorbereitung (einmalig, auf dem Pi):
+#   cd ~/knobelstatz
+#   git init
+#   git remote add origin https://github.com/lxthunder/knobeln.git
+#   git fetch
+#   git add -A && git checkout -f rundenmodus
+#
+# Dann dieses Script ausführen:
+#   bash ~/knobelstatz/setup_pi.sh
+#
+# Updates einspielen (nach Code-Änderungen):
+#   cd ~/knobelstatz && git pull origin rundenmodus && sudo systemctl restart knobelstatz
 # =============================================================================
 
 set -e  # Bei Fehler abbrechen
