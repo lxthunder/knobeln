@@ -226,6 +226,26 @@ gunzip -c knobelstatz_backup.img.gz | sudo dd of=/dev/mmcblk0 bs=4M status=progr
 
 ---
 
+## 7. SD-Karte schreibschützen (Read-Only Overlay)
+
+Verhindert, dass der Pi auf die SD-Karte schreibt – schützt vor Datenverlust bei Stromausfall.  
+**Hinweis:** Die `Knobel.txt` Datenbank kann danach nicht mehr aktualisiert werden.
+
+```bash
+ssh bueffel@knobelserver.local
+sudo raspi-config
+```
+
+Im Menü navigieren (Pfeiltasten + Enter):  
+**Performance Options → Overlay File System → Enable → Yes**
+
+Pi neu starten:
+```bash
+sudo reboot
+```
+
+---
+
 ## Ergebnis
 
 | Situation | Verhalten |
