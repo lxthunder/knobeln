@@ -201,10 +201,24 @@ function doReveal() {
 
   const totalCoins = active.reduce((sum, p) => sum + (p.coinsLoaded || 0), 0);
 
+  // Unmöglicher Tipp: Spieler tippt außerhalb seines möglichen Bereichs
+  let impossibleGuesser = null;
+  if (!ruleViolator) {
+    const activeCount = active.length;
+    for (const p of active) {
+      const min = p.coinsLoaded;
+      const max = p.coinsLoaded + (activeCount - 1) * 3;
+      if (p.guess < min || p.guess > max) {
+        impossibleGuesser = { id: p.id, name: p.name };
+        break;
+      }
+    }
+  }
+
   // Regelverstoß hat Vorrang: Sieger-Ermittlung nur wenn kein Verstoß
   let correctGuessers = [];
   let loserIds = active.map(p => p.id);
-  if (!ruleViolator) {
+  if (!ruleViolator && !impossibleGuesser) {
     correctGuessers = active.filter(p => p.guess === totalCoins).map(p => p.id);
     loserIds = active.filter(p => p.guess !== totalCoins).map(p => p.id);
 
@@ -226,7 +240,46 @@ function doReveal() {
   const revealShowMs = animMs + 3000; // Animation + 3s lesen
 
   state.phase = 'reveal';
-  io.emit('game:reveal', { coinsPerPlayer, totalCoins, correctGuessers, loserIds, remaining, ruleViolatorId: ruleViolator?.id || null, ruleViolatorName: ruleViolator?.name || null });
+  io.emit('game:reveal', {
+    coinsPerPlayer, totalCoins, correctGuessers, loserIds, remaining,
+    ruleViolatorId: ruleViolator?.id || null,
+    ruleViolatorName: ruleViolator?.name || null,
+    impossibleGuesserId: impossibleGuesser?.id || null,
+    impossibleGuesserName: impossibleGuesser?.name || null,
+  });
+
+  // Unmöglicher Tipp: Rundenverlierer sofort festlegen
+  if (impossibleGuesser) {
+    state.roundLosers.push({ id: impossibleGuesser.id, name: impossibleGuesser.name });
+    state.nextRoundStartId = impossibleGuesser.id;
+    setTimeout(() => {
+      for (const p of state.players.values()) { p.isSpectator = false; p.guessedCorrect = false; }
+      if (state.currentRound === 1) {
+        io.emit('game:announcement', { type: 'round1Loser', names: [impossibleGuesser.name] });
+        setTimeout(() => { state.currentRound = 2; state.durchgang = 0; startLoading(); }, 5000);
+      } else if (state.roundLosers[0].id === state.roundLosers[1].id) {
+        const loser = state.players.get(state.roundLosers[0].id) || state.roundLosers[0];
+        io.emit('game:announcement', { type: 'round2Loser', names: [loser.name] });
+        setTimeout(() => {
+          state.phase = 'finished';
+          io.emit('game:finished', { loserId: loser.id, loserName: loser.name, players: getFinishedPlayers() });
+        }, 5000);
+      } else {
+        io.emit('game:announcement', { type: 'finalStart', names: state.roundLosers.map(l => l.name) });
+        setTimeout(() => {
+          state.currentRound = 'final';
+          state.durchgang = 0;
+          state.nextRoundStartId = state.roundLosers[0].id;
+          const loserIds = new Set(state.roundLosers.map(l => l.id));
+          for (const p of state.players.values()) {
+            if (!loserIds.has(p.id)) p.isSpectator = true;
+          }
+          startLoading();
+        }, 5000);
+      }
+    }, revealShowMs);
+    return;
+  }
 
   // Regelverstoß: Rundenverlierer sofort festlegen, restliche Sub-Runden überspringen
   if (ruleViolator) {

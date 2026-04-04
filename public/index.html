@@ -151,8 +151,15 @@
   <!-- STATUS BAR -->
   <div id="status-bar">
     <div class="sb-item">
-      <span class="sb-label">Aktion</span>
+      <span class="sb-value" id="sb-player">—</span>
+    </div>
+    <div class="sb-divider"></div>
+    <div class="sb-item">
       <span class="sb-value" id="sb-action">—</span>
+    </div>
+    <div class="sb-divider"></div>
+    <div class="sb-item">
+      <span class="sb-value" id="sb-status">—</span>
     </div>
   </div>
 
@@ -298,11 +305,18 @@
     let revealAnimationEndsAt = 0;
     let forbiddenNumber = null;
     let roundLoserIds = [];
+    let activePlayerCount = 0;
+    let sbPlayerName = '—';
     let sbAction = '—';
+    let sbStatus = '—';
 
     function updateStatusBar(opts = {}) {
+      if (opts.player !== undefined) sbPlayerName = opts.player;
       if (opts.action !== undefined) sbAction = opts.action;
+      if (opts.status !== undefined) sbStatus = opts.status;
+      document.getElementById('sb-player').textContent = sbPlayerName;
       document.getElementById('sb-action').textContent = sbAction;
+      document.getElementById('sb-status').textContent = sbStatus;
     }
 
     function showStatusBar(visible) {
@@ -427,6 +441,7 @@
       }
 
       if (phase === 'guessing') {
+        activePlayerCount = (players || []).filter(p => !p.isSpectator).length;
         turnOrderData = turnOrder || [];
         renderTurnOrder(null);
         document.getElementById('guessInput').value = '';
@@ -579,7 +594,7 @@
     }
 
     // ── Reveal ─────────────────────────────────────────────
-    socket.on('game:reveal', ({ coinsPerPlayer, totalCoins, correctGuessers, loserIds, remaining, ruleViolatorId, ruleViolatorName }) => {
+    socket.on('game:reveal', ({ coinsPerPlayer, totalCoins, correctGuessers, loserIds, remaining, ruleViolatorId, ruleViolatorName, impossibleGuesserId, impossibleGuesserName }) => {
       updateStatusBar({ action: 'Ergebnis' });
       show('screen-reveal');
       document.getElementById('totalCoins').textContent = '0';
@@ -661,6 +676,9 @@
       setTimeout(() => {
         if (ruleViolatorName) {
           msgEl.textContent = `⚠️ ${ruleViolatorName} hatte keine Münze – Runde verloren!`;
+          msgEl.style.color = '#e74c3c';
+        } else if (impossibleGuesserName) {
+          msgEl.textContent = `⚠️ ${impossibleGuesserName} hat eine unmögliche Zahl getippt – Runde verloren!`;
           msgEl.style.color = '#e74c3c';
         } else {
           const names = correctGuessers.map(id => coinsPerPlayer[id]?.name).filter(Boolean);
