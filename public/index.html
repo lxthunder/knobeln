@@ -151,18 +151,8 @@
   <!-- STATUS BAR -->
   <div id="status-bar">
     <div class="sb-item">
-      <span class="sb-label">Spieler</span>
-      <span class="sb-value" id="sb-player">—</span>
-    </div>
-    <div class="sb-divider"></div>
-    <div class="sb-item">
       <span class="sb-label">Aktion</span>
       <span class="sb-value" id="sb-action">—</span>
-    </div>
-    <div class="sb-divider"></div>
-    <div class="sb-item">
-      <span class="sb-label">Status</span>
-      <span class="sb-value" id="sb-status">—</span>
     </div>
   </div>
 
@@ -308,17 +298,11 @@
     let revealAnimationEndsAt = 0;
     let forbiddenNumber = null;
     let roundLoserIds = [];
-    let sbPlayerName = '—';
     let sbAction = '—';
-    let sbStatus = '—';
 
     function updateStatusBar(opts = {}) {
-      if (opts.player !== undefined) sbPlayerName = opts.player;
       if (opts.action !== undefined) sbAction = opts.action;
-      if (opts.status !== undefined) sbStatus = opts.status;
-      document.getElementById('sb-player').textContent = sbPlayerName;
       document.getElementById('sb-action').textContent = sbAction;
-      document.getElementById('sb-status').textContent = sbStatus;
     }
 
     function showStatusBar(visible) {
