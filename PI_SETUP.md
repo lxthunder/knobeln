@@ -8,16 +8,26 @@
 
 ---
 
-## 1. Dateien auf den Pi übertragen (von Windows)
+## 1. Repo auf den Pi klonen
 
 ```bash
-# Verzeichnis auf dem Pi anlegen
-ssh bueffel@knobelserver "mkdir -p ~/knobelstatz"
+# Auf dem Pi einloggen
+ssh bueffel@knobelserver.local
 
-# Dateien kopieren
-scp -r "C:/Users/afuchs/Desktop/Claude Onboarding/public" bueffel@knobelserver:~/knobelstatz/
-scp "C:/Users/afuchs/Desktop/Claude Onboarding/server.js" bueffel@knobelserver:~/knobelstatz/
-scp "C:/Users/afuchs/Desktop/Claude Onboarding/package.json" bueffel@knobelserver:~/knobelstatz/
+# Repo klonen (falls noch nicht vorhanden)
+cd ~/knobelstatz
+git init
+git remote add origin https://github.com/lxthunder/knobeln.git
+git fetch
+git add -A && git checkout -f rundenmodus
+npm install
+```
+
+### Updates einspielen (nach Code-Änderungen)
+
+```bash
+ssh bueffel@knobelserver.local
+cd ~/knobelstatz && git pull origin rundenmodus && sudo systemctl restart knobelstatz
 ```
 
 ---
