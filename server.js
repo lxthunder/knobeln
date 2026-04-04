@@ -254,7 +254,10 @@ function doReveal() {
     state.nextRoundStartId = impossibleGuesser.id;
     setTimeout(() => {
       for (const p of state.players.values()) { p.isSpectator = false; p.guessedCorrect = false; }
-      if (state.currentRound === 1) {
+      if (state.currentRound === 'final') {
+        state.phase = 'finished';
+        io.emit('game:finished', { loserId: impossibleGuesser.id, loserName: impossibleGuesser.name, players: getFinishedPlayers(), roundLoserIds: state.roundLosers.map(l => l.id) });
+      } else if (state.currentRound === 1) {
         io.emit('game:announcement', { type: 'round1Loser', names: [impossibleGuesser.name] });
         setTimeout(() => { state.currentRound = 2; state.durchgang = 0; startLoading(); }, 5000);
       } else if (state.roundLosers[0].id === state.roundLosers[1].id) {
@@ -262,7 +265,7 @@ function doReveal() {
         io.emit('game:announcement', { type: 'round2Loser', names: [loser.name] });
         setTimeout(() => {
           state.phase = 'finished';
-          io.emit('game:finished', { loserId: loser.id, loserName: loser.name, players: getFinishedPlayers() });
+          io.emit('game:finished', { loserId: loser.id, loserName: loser.name, players: getFinishedPlayers(), roundLoserIds: state.roundLosers.map(l => l.id) });
         }, 5000);
       } else {
         io.emit('game:announcement', { type: 'finalStart', names: state.roundLosers.map(l => l.name) });
@@ -295,7 +298,7 @@ function doReveal() {
         io.emit('game:announcement', { type: 'round2Loser', names: [loser.name] });
         setTimeout(() => {
           state.phase = 'finished';
-          io.emit('game:finished', { loserId: loser.id, loserName: loser.name, players: getFinishedPlayers() });
+          io.emit('game:finished', { loserId: loser.id, loserName: loser.name, players: getFinishedPlayers(), roundLoserIds: state.roundLosers.map(l => l.id) });
         }, 5000);
       } else {
         io.emit('game:announcement', { type: 'finalStart', names: state.roundLosers.map(l => l.name) });
@@ -334,7 +337,7 @@ function doReveal() {
           io.emit('game:announcement', { type: 'round2Loser', names: [l.name] });
           setTimeout(() => {
             state.phase = 'finished';
-            io.emit('game:finished', { loserId: l.id, loserName: l.name, players: getFinishedPlayers() });
+            io.emit('game:finished', { loserId: l.id, loserName: l.name, players: getFinishedPlayers(), roundLoserIds: state.roundLosers.map(lo => lo.id) });
           }, 5000);
         } else {
           // Endspiel: nur die zwei Rundenverlierer spielen
@@ -354,7 +357,7 @@ function doReveal() {
     } else {
       setTimeout(() => {
         state.phase = 'finished';
-        io.emit('game:finished', { loserId: loser?.id || null, loserName: loser?.name || '?', players: getFinishedPlayers(), roundLoserIds: state.currentRound === 'final' ? state.roundLosers.map(l => l.id) : [] });
+        io.emit('game:finished', { loserId: loser?.id || null, loserName: loser?.name || '?', players: getFinishedPlayers(), roundLoserIds: state.roundLosers.map(l => l.id) });
       }, revealShowMs);
     }
   } else {

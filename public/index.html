@@ -76,8 +76,19 @@
     .reveal-player-coins {
       display: flex;
       flex-wrap: wrap;
+      flex-direction: row-reverse;
+      justify-content: flex-start;
       gap: 4px;
-      margin-left: auto;
+      flex: 1;
+      padding: 0 8px;
+    }
+    .reveal-guess {
+      font-size: 16px;
+      font-weight: bold;
+      color: #ffffff;
+      min-width: 28px;
+      text-align: right;
+      flex-shrink: 0;
     }
     .reveal-total-area { align-self: center; display: flex; flex-direction: column; align-items: center; margin-top: 16px; }
     .total-coins-big { font-size: 72px; font-weight: bold; color: #ffffff; line-height: 1; }
@@ -430,10 +441,10 @@
           if (p.isSpectator) {
             li.classList.add('guessed-correct');
             const badge = p.guessedCorrect ? '✓ Richtig geraten' : 'Wartet in Lobby';
-            li.innerHTML = `${p.name}${poopMark}${p.id === myId ? ' (du)' : ''}<span class="badge">${badge}</span>`;
+            li.innerHTML = `${p.name}${poopMark}<span class="badge">${badge}</span>`;
           } else {
             li.style.opacity = '0.4';
-            li.innerHTML = `${p.name}${poopMark}${p.id === myId ? ' (du)' : ''}<span class="badge">...</span>`;
+            li.innerHTML = `${p.name}${poopMark}<span class="badge">...</span>`;
           }
           list.appendChild(li);
         });
@@ -471,10 +482,10 @@
         if (p.isSpectator) {
           li.classList.add('guessed-correct');
           const badge = p.guessedCorrect ? '✓ Richtig geraten' : 'Wartet in Lobby';
-          li.innerHTML = `${p.name}${poopMark}${p.id === myId ? ' (du)' : ''}<span class="badge">${badge}</span>`;
+          li.innerHTML = `${p.name}${poopMark}<span class="badge">${badge}</span>`;
         } else {
           if (!p.isChecked) li.style.opacity = '0.4';
-          li.innerHTML = `${p.name}${poopMark}${p.id === myId ? ' (du)' : ''}<span class="badge">${p.isChecked ? '✓' : '...'}</span>`;
+          li.innerHTML = `${p.name}${poopMark}<span class="badge">${p.isChecked ? '✓' : '...'}</span>`;
         }
         list.appendChild(li);
       });
@@ -588,7 +599,7 @@
         else if (!p.done) li.style.opacity = '0.4';
         const badge = p.done ? `<span class="badge">${p.guess}</span>` : '';
         const poopMark = roundLoserIds.includes(p.id) ? ' 💩' : '';
-        li.innerHTML = `${p.name}${poopMark}${p.id === myId ? ' (du)' : ''}${badge}`;
+        li.innerHTML = `${p.name}${poopMark}${badge}`;
         list.appendChild(li);
       });
     }
@@ -611,7 +622,8 @@
         const li = document.createElement('li');
         li.dataset.id = p.id;
         const poopMark = roundLoserIds.includes(p.id) ? ' 💩' : '';
-        li.innerHTML = `<span>${p.name}${poopMark}${p.id === myId ? ' (du)' : ''}</span><div class="reveal-player-coins" id="coins-${p.id}"></div>`;
+        const guess = coinsPerPlayer[p.id]?.guess ?? '?';
+        li.innerHTML = `<span>${p.name}${poopMark}</span><div class="reveal-player-coins" id="coins-${p.id}"></div><span class="reveal-guess">${guess}</span>`;
         revealList.appendChild(li);
       });
 
@@ -725,9 +737,9 @@
         list.innerHTML = '';
         (finishedPlayers || []).forEach(p => {
           const li = document.createElement('li');
-          const isLoser = p.id === loserId || (roundLoserIds && roundLoserIds.includes(p.id));
-          const poopMark = isLoser ? ' 💩' : '';
-          li.innerHTML = `${p.name}${poopMark}${p.id === myId ? ' (du)' : ''}${p.drink ? `<span class="badge">${p.drink}</span>` : ''}`;
+          const poopCount = (roundLoserIds || []).filter(id => id === p.id).length;
+          const poopMark = ' 💩'.repeat(poopCount);
+          li.innerHTML = `${p.name}${poopMark}${p.drink ? `<span class="badge">${p.drink}</span>` : ''}`;
           if (p.name === loserName) li.style.color = '#ff8c00';
           list.appendChild(li);
         });
