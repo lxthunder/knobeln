@@ -37,12 +37,9 @@ info "Arbeitsverzeichnis: $INSTALL_DIR"
 # =============================================================================
 # 1. System-Updates & Pakete installieren
 # =============================================================================
-info "Installiere Node.js, hostapd und dnsmasq..."
+info "Installiere Node.js, hostapd und i2c-tools..."
 sudo apt update -y
-sudo apt install -y nodejs npm hostapd dnsmasq
-
-# hostapd beim Boot deaktivieren (wird vom wifi-check.sh gesteuert)
-sudo systemctl disable hostapd
+sudo apt install -y nodejs npm hostapd i2c-tools
 
 # =============================================================================
 # 2. Node-Abhängigkeiten installieren
@@ -76,60 +73,18 @@ sudo systemctl start knobelstatz
 info "Knobelstatz-Service läuft."
 
 # =============================================================================
-# 4. hostapd konfigurieren
+# 4. NetworkManager Hotspot-Profil erstellen
 # =============================================================================
-info "Konfiguriere hostapd (WLAN-Hotspot)..."
-sudo tee /etc/hostapd/hostapd.conf > /dev/null <<EOF
-interface=wlan0
-driver=nl80211
-ssid=Knobelstatz
-hw_mode=g
-channel=7
-wmm_enabled=0
-macaddr_acl=0
-auth_algs=1
-ignore_broadcast_ssid=0
-wpa=2
-wpa_passphrase=Knobel123
-wpa_key_mgmt=WPA-PSK
-rsn_pairwise=CCMP
-EOF
+info "Erstelle NetworkManager Hotspot-Profil..."
 
-# Pfad zur Konfigurationsdatei setzen (Debian-Standard)
-sudo sed -i 's|^#DAEMON_CONF=.*|DAEMON_CONF="/etc/hostapd/hostapd.conf"|' /etc/default/hostapd
+# Altes Profil entfernen falls vorhanden
+nmcli con delete Hotspot 2>/dev/null || true
+
+sudo nmcli con add type wifi ifname wlan0 con-name Hotspot autoconnect no ssid Knobelstatz mode ap
+sudo nmcli con modify Hotspot 802-11-wireless.band bg ipv4.method shared wifi-sec.key-mgmt wpa-psk wifi-sec.psk "Knobel123"
 
 # =============================================================================
-# 5. dnsmasq konfigurieren
-# =============================================================================
-info "Konfiguriere dnsmasq (DHCP für Hotspot)..."
-
-# Nur hinzufügen, wenn noch nicht vorhanden
-if ! grep -q "dhcp-range=192.168.4" /etc/dnsmasq.conf; then
-    sudo tee -a /etc/dnsmasq.conf > /dev/null <<EOF
-
-# Knobelstatz Hotspot
-interface=wlan0
-dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
-EOF
-fi
-
-# =============================================================================
-# 6. Statische IP für Hotspot-Modus (dhcpcd)
-# =============================================================================
-info "Konfiguriere statische IP für Hotspot-Modus..."
-
-if ! grep -q "# Knobelstatz Hotspot" /etc/dhcpcd.conf; then
-    sudo tee -a /etc/dhcpcd.conf > /dev/null <<EOF
-
-# Knobelstatz Hotspot
-interface=wlan0
-static ip_address=192.168.4.1/24
-nohook wpa_supplicant
-EOF
-fi
-
-# =============================================================================
-# 7. WiFi-Fallback-Script erstellen
+# 5. WiFi-Fallback-Script erstellen
 # =============================================================================
 info "Erstelle WiFi-Fallback-Script..."
 sudo tee /usr/local/bin/wifi-check.sh > /dev/null <<'EOF'
@@ -137,20 +92,18 @@ sudo tee /usr/local/bin/wifi-check.sh > /dev/null <<'EOF'
 
 SSID="Burrow"
 
-if iwlist wlan0 scan | grep -q "$SSID"; then
-    systemctl stop hostapd
-    systemctl start wpa_supplicant
+if nmcli dev wifi list | grep -q "$SSID"; then
+    nmcli con down Hotspot 2>/dev/null
+    nmcli dev wifi connect "$SSID" 2>/dev/null
 else
-    systemctl stop wpa_supplicant
-    ip addr flush dev wlan0
-    systemctl start hostapd
+    nmcli con up Hotspot
 fi
 EOF
 
 sudo chmod +x /usr/local/bin/wifi-check.sh
 
 # =============================================================================
-# 8. WiFi-Fallback als systemd-Service
+# 6. WiFi-Fallback als systemd-Service
 # =============================================================================
 info "Richte WiFi-Fallback-Service ein..."
 sudo tee /etc/systemd/system/wifi-check.service > /dev/null <<EOF
