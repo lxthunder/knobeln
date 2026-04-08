@@ -88,7 +88,11 @@ info "Erstelle NetworkManager Hotspot-Profil..."
 # Altes Profil entfernen falls vorhanden
 nmcli con delete Hotspot 2>/dev/null || true
 
+# AP-Modus auf wlan0, nicht automatisch verbinden
 sudo nmcli con add type wifi ifname wlan0 con-name Hotspot autoconnect no ssid Knobelstatz mode ap
+# band bg = 2.4 GHz (kompatibel mit allen Geräten)
+# ipv4.method shared = NetworkManager vergibt IP-Adressen (DHCP) an verbundene Geräte
+# Kein Passwort – offenes Netzwerk
 sudo nmcli con modify Hotspot 802-11-wireless.band bg ipv4.method shared
 
 # =============================================================================
