@@ -89,7 +89,7 @@ info "Erstelle NetworkManager Hotspot-Profil..."
 nmcli con delete Hotspot 2>/dev/null || true
 
 sudo nmcli con add type wifi ifname wlan0 con-name Hotspot autoconnect no ssid Knobelstatz mode ap
-sudo nmcli con modify Hotspot 802-11-wireless.band bg ipv4.method shared wifi-sec.key-mgmt wpa-psk wifi-sec.psk "Knobel123"
+sudo nmcli con modify Hotspot 802-11-wireless.band bg ipv4.method shared
 
 # =============================================================================
 # 5. WiFi-Fallback-Script erstellen
@@ -145,7 +145,7 @@ echo -e "${GREEN}=============================================${NC}"
 echo ""
 echo "  Knobelstatz-Server:  http://knobelserver:8080"
 echo "  Hotspot SSID:        Knobelstatz"
-echo "  Hotspot Passwort:    Knobel123"
+echo "  Hotspot Passwort:    (kein Passwort)"
 echo "  Hotspot Adresse:     http://10.42.0.1:8080"
 echo ""
 echo "  Service-Status prüfen:"
