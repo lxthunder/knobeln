@@ -45,6 +45,10 @@ sudo apt install -y nodejs npm hostapd i2c-tools
 sudo systemctl stop dnsmasq 2>/dev/null || true
 sudo systemctl disable dnsmasq 2>/dev/null || true
 
+# hostapd deaktivieren – kollidiert mit NetworkManager's AP-Modus
+sudo systemctl stop hostapd 2>/dev/null || true
+sudo systemctl disable hostapd 2>/dev/null || true
+
 # =============================================================================
 # 2. Node-Abhängigkeiten installieren
 # =============================================================================
@@ -138,7 +142,7 @@ echo ""
 echo "  Knobelstatz-Server:  http://knobelserver:8080"
 echo "  Hotspot SSID:        Knobelstatz"
 echo "  Hotspot Passwort:    Knobel123"
-echo "  Hotspot Adresse:     http://192.168.4.1:8080"
+echo "  Hotspot Adresse:     http://10.42.0.1:8080"
 echo ""
 echo "  Service-Status prüfen:"
 echo "    sudo systemctl status knobelstatz"
