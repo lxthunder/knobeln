@@ -100,6 +100,9 @@ sudo tee /usr/local/bin/wifi-check.sh > /dev/null <<'EOF'
 
 SSID="Burrow"
 
+# Warten bis NetworkManager bereit ist
+sleep 5
+
 if nmcli dev wifi list | grep -q "$SSID"; then
     nmcli con down Hotspot 2>/dev/null
     nmcli dev wifi connect "$SSID" 2>/dev/null
@@ -117,7 +120,8 @@ info "Richte WiFi-Fallback-Service ein..."
 sudo tee /etc/systemd/system/wifi-check.service > /dev/null <<EOF
 [Unit]
 Description=WiFi Check - Hotspot Fallback
-After=network.target
+After=NetworkManager.service
+Wants=NetworkManager.service
 
 [Service]
 ExecStart=/usr/local/bin/wifi-check.sh
