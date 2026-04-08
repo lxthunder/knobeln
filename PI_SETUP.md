@@ -84,100 +84,49 @@ Server läuft auf Port **8080**: `http://knobelserver:8080`
 
 Der Pi verbindet sich mit dem Heimnetzwerk `Burrow`. Ist dieses nicht erreichbar, öffnet er automatisch einen eigenen WLAN-Hotspot.
 
-### Hotspot-Software installieren
+**Hinweis:** Der Hotspot wird vollständig über NetworkManager verwaltet. hostapd und dnsmasq werden installiert aber deaktiviert, da sie mit NetworkManager kollidieren.
+
+### Konflikte deaktivieren
 
 ```bash
-sudo apt install hostapd dnsmasq -y
-sudo systemctl disable hostapd
+sudo systemctl stop dnsmasq && sudo systemctl disable dnsmasq
+sudo systemctl stop hostapd && sudo systemctl disable hostapd
 ```
 
-### hostapd konfigurieren
-
-```bash
-sudo truncate -s 0 /etc/hostapd/hostapd.conf
-sudo nano /etc/hostapd/hostapd.conf
-```
-
-Inhalt:
-```
-interface=wlan0
-driver=nl80211
-ssid=Knobelstatz
-hw_mode=g
-channel=7
-wmm_enabled=0
-macaddr_acl=0
-auth_algs=1
-ignore_broadcast_ssid=0
-wpa=2
-wpa_passphrase=Knobel123
-wpa_key_mgmt=WPA-PSK
-rsn_pairwise=CCMP
-```
-
-### dnsmasq konfigurieren
+### Hotspot-Profil erstellen
 
 ```bash
-sudo nano /etc/dnsmasq.conf
+sudo nmcli con add type wifi ifname wlan0 con-name Hotspot autoconnect no ssid Knobelstatz mode ap
+sudo nmcli con modify Hotspot 802-11-wireless.band bg ipv4.method shared
 ```
 
-Am Ende anfügen:
-```
-interface=wlan0
-dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
-```
-
-### Statische IP für Hotspot-Modus
-
-```bash
-sudo nano /etc/dhcpcd.conf
-```
-
-Am Ende anfügen:
-```
-interface=wlan0
-static ip_address=192.168.4.1/24
-nohook wpa_supplicant
-```
+Kein Passwort — offenes Netzwerk.
 
 ### Fallback-Skript erstellen
 
 ```bash
-sudo truncate -s 0 /usr/local/bin/wifi-check.sh
-sudo nano /usr/local/bin/wifi-check.sh
-```
-
-Inhalt:
-```bash
+sudo tee /usr/local/bin/wifi-check.sh > /dev/null <<'EOF'
 #!/bin/bash
-
 SSID="Burrow"
-
-if iwlist wlan0 scan | grep -q "$SSID"; then
-    systemctl stop hostapd
-    systemctl start wpa_supplicant
+sleep 5
+if nmcli dev wifi list | grep -q "$SSID"; then
+    nmcli con down Hotspot 2>/dev/null
+    nmcli dev wifi connect "$SSID" 2>/dev/null
 else
-    systemctl stop wpa_supplicant
-    ip addr flush dev wlan0
-    systemctl start hostapd
+    nmcli con up Hotspot
 fi
-```
-
-```bash
+EOF
 sudo chmod +x /usr/local/bin/wifi-check.sh
 ```
 
 ### Fallback als Autostart-Service einrichten
 
 ```bash
-sudo nano /etc/systemd/system/wifi-check.service
-```
-
-Inhalt:
-```ini
+sudo tee /etc/systemd/system/wifi-check.service > /dev/null <<'EOF'
 [Unit]
 Description=WiFi Check - Hotspot Fallback
-After=network.target
+After=NetworkManager.service
+Wants=NetworkManager.service
 
 [Service]
 ExecStart=/usr/local/bin/wifi-check.sh
@@ -185,9 +134,8 @@ RemainAfterExit=yes
 
 [Install]
 WantedBy=multi-user.target
-```
+EOF
 
-```bash
 sudo systemctl daemon-reload
 sudo systemctl enable wifi-check
 sudo systemctl start wifi-check
@@ -250,5 +198,5 @@ sudo reboot
 
 | Situation | Verhalten |
 |-----------|-----------|
-| `Burrow` erreichbar | Pi verbindet sich mit Heimnetzwerk, App auf `http://knobelserver:8080` |
-| `Burrow` nicht erreichbar | Pi öffnet WLAN `Knobelstatz` (Passwort: `Knobel123`), App auf `http://192.168.4.1:8080` |
+| `Burrow` erreichbar | Pi verbindet sich mit Heimnetzwerk, App auf `http://knobelserver.local:8080` |
+| `Burrow` nicht erreichbar | Pi öffnet WLAN `Knobelstatz` (kein Passwort), App auf `http://10.42.0.1:8080` |
