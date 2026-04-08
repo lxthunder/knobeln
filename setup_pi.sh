@@ -41,6 +41,10 @@ info "Installiere Node.js, hostapd und i2c-tools..."
 sudo apt update -y
 sudo apt install -y nodejs npm hostapd i2c-tools
 
+# dnsmasq deaktivieren – kollidiert mit NetworkManager's internem DHCP für Hotspot
+sudo systemctl stop dnsmasq 2>/dev/null || true
+sudo systemctl disable dnsmasq 2>/dev/null || true
+
 # =============================================================================
 # 2. Node-Abhängigkeiten installieren
 # =============================================================================
