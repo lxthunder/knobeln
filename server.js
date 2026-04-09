@@ -28,6 +28,13 @@ function writeDB(entries) {
   fs.writeFileSync(DB_FILE, lines.join('\n') + '\n', 'utf8');
 }
 
+const FRANK_ALIASES = ['frank', 'franky', 'frankie', 'fusch'];
+function findDbEntry(db, playerName) {
+  const lower = playerName.toLowerCase();
+  return db.find(e => e.name.toLowerCase() === lower)
+      || (playerName === 'Frank Fischer' ? db.find(e => FRANK_ALIASES.includes(e.name.toLowerCase())) : null);
+}
+
 app.get('/api/knobel', (req, res) => res.json(readDB()));
 
 app.post('/api/knobel', (req, res) => {
@@ -86,7 +93,7 @@ function getYoungestId() {
     let youngestId = null;
     let youngestDate = null;
     for (const p of state.players.values()) {
-      const entry = db.find(e => e.name.toLowerCase() === p.name.toLowerCase());
+      const entry = findDbEntry(db, p.name);
       if (!entry?.geburtstag) continue;
       const [d, m, y] = entry.geburtstag.split('.').map(Number);
       const date = new Date(y, m - 1, d);
@@ -371,7 +378,7 @@ function getFinishedPlayers() {
   return getPlayers()
     .filter(p => !p.isSpectator || p.guessedCorrect !== undefined)
     .map(p => {
-      const entry = db.find(e => e.name.toLowerCase() === p.name.toLowerCase());
+      const entry = findDbEntry(db, p.name);
       return { id: p.id, name: p.name, drink: entry?.lieblingsgetraenk || '' };
     });
 }

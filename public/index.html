@@ -90,6 +90,7 @@
       text-align: right;
       flex-shrink: 0;
     }
+    .reveal-guess.violation { color: #e74c3c; }
     .reveal-total-area { align-self: center; display: flex; flex-direction: column; align-items: center; margin-top: 16px; }
     .total-coins-big { font-size: 72px; font-weight: bold; color: #ffffff; line-height: 1; }
     .counter-bump { animation: bump 0.25s ease; }
@@ -623,7 +624,8 @@
         li.dataset.id = p.id;
         const poopMark = roundLoserIds.includes(p.id) ? ' 💩' : '';
         const guess = coinsPerPlayer[p.id]?.guess ?? '?';
-        li.innerHTML = `<span>${p.name}${poopMark}</span><div class="reveal-player-coins" id="coins-${p.id}"></div><span class="reveal-guess">${guess}</span>`;
+        const isViolator = p.id === ruleViolatorId || p.id === impossibleGuesserId;
+        li.innerHTML = `<span>${p.name}${poopMark}</span><div class="reveal-player-coins" id="coins-${p.id}"></div><span class="reveal-guess${isViolator ? ' violation' : ''}">${guess}</span>`;
         revealList.appendChild(li);
       });
 
