@@ -205,8 +205,9 @@ function doReveal() {
   let impossibleGuesser = null;
   if (!ruleViolator) {
     const activeCount = active.length;
+    const minPerOther = (state.durchgang === 1 && state.currentRound !== 'final') ? 1 : 0;
     for (const p of active) {
-      const min = p.coinsLoaded;
+      const min = p.coinsLoaded + (activeCount - 1) * minPerOther;
       const max = p.coinsLoaded + (activeCount - 1) * 3;
       if (p.guess < min || p.guess > max) {
         impossibleGuesser = { id: p.id, name: p.name };
