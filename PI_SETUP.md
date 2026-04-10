@@ -32,10 +32,10 @@ cd ~/knobelstatz && git pull origin rundenmodus && sudo systemctl restart knobel
 
 ---
 
-## 2. Node.js installieren
+## 2. Pakete installieren
 
 ```bash
-sudo apt install nodejs npm -y
+sudo apt install -y git nodejs npm
 ```
 
 ---

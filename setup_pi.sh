@@ -39,7 +39,7 @@ info "Arbeitsverzeichnis: $INSTALL_DIR"
 # =============================================================================
 info "Installiere Node.js, hostapd und i2c-tools..."
 sudo apt update -y
-sudo apt install -y nodejs npm hostapd i2c-tools
+sudo apt install -y git nodejs npm hostapd i2c-tools
 
 # dnsmasq deaktivieren – kollidiert mit NetworkManager's internem DHCP für Hotspot
 sudo systemctl stop dnsmasq 2>/dev/null || true

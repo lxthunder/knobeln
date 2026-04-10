@@ -19,12 +19,15 @@
     /* Loading */
     .coin-checkbox-row { display: flex; align-items: center; gap: 20px; }
     .checkbox-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-    .checkbox-wrap label { font-size: 12px; color: #555; letter-spacing: 1px; text-transform: uppercase; }
-    #lockCheckbox, #guessCheckbox, #joinCheckbox, #startCheckbox {
-      width: 28px; height: 28px; cursor: pointer;
-      accent-color: #ff8c00;
+    .checkbox-wrap input[type="checkbox"] { display: none; }
+    .checkbox-wrap label {
+      font-size: 16px; font-weight: bold; color: #fff; letter-spacing: 1px;
+      background: #ff8c00; border: 2px solid #fff; border-radius: 12px;
+      padding: 10px 28px; cursor: pointer;
+      transition: opacity 0.2s;
     }
-    #lockCheckbox:disabled, #guessCheckbox:disabled { cursor: default; opacity: 0.4; }
+    .checkbox-wrap input:checked + label { opacity: 0.35; cursor: default; }
+    .checkbox-wrap input:disabled + label { opacity: 0.25; cursor: default; }
 
     .check-count { font-size: 13px; color: #555; }
     .spectator-banner { font-size: 13px; color: #555; letter-spacing: 2px; text-transform: uppercase; padding: 8px 16px; border: 1px solid #333; }
@@ -99,13 +102,13 @@
     /* Announcement */
     #screen-announcement { justify-content: center; gap: 28px; }
     .ann-label { font-size: 13px; color: #666; letter-spacing: 5px; text-transform: uppercase; }
-    .ann-names { font-size: 62px; font-weight: bold; color: #c0392b; line-height: 1.1; text-align: center; }
+    .ann-names { font-size: 42px; font-weight: bold; color: #c0392b; line-height: 1.1; text-align: center; }
     .ann-sub { font-size: 15px; color: #aaa; letter-spacing: 2px; text-align: center; }
 
     .reveal-list-active { color: #ff8c00 !important; border-left: 2px solid #ff8c00; padding-left: 10px; }
 
     /* Finished */
-    .loser-name-big { font-size: 62px; font-weight: bold; color: #c0392b; }
+    .loser-name-big { font-size: 42px; font-weight: bold; color: #c0392b; text-align: center; }
 
     /* Status Bar */
     #status-bar {
