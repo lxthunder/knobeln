@@ -612,7 +612,7 @@
 
     // ── Reveal ─────────────────────────────────────────────
     socket.on('game:reveal', ({ coinsPerPlayer, totalCoins, correctGuessers, loserIds, remaining, ruleViolatorId, ruleViolatorName, impossibleGuesserId, impossibleGuesserName }) => {
-      updateStatusBar({ action: 'Ergebnis' });
+      updateStatusBar({ action: 'Ergebnis', status: '—' });
       show('screen-reveal');
       document.getElementById('totalCoins').textContent = '0';
 
