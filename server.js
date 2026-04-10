@@ -137,6 +137,7 @@ function startLoading() {
     players: getPlayers().map(p => ({ id: p.id, name: p.name, isSpectator: p.isSpectator, guessedCorrect: p.guessedCorrect || false })),
     roundMode: state.roundMode,
     currentRound: state.currentRound,
+    durchgang: state.durchgang,
     roundLoserIds: state.roundLosers.map(l => l.id),
   });
 }
@@ -164,6 +165,7 @@ function startGuessing() {
     turnOrder: rotated.map(p => ({ id: p.id, name: p.name })),
     roundMode: state.roundMode,
     currentRound: state.currentRound,
+    durchgang: state.durchgang,
   });
 
   advanceTurn();

@@ -331,7 +331,7 @@
       if (opts.status !== undefined) sbStatus = opts.status;
       document.getElementById('sb-player').textContent = sbPlayerName;
       document.getElementById('sb-action').textContent = sbAction;
-      document.getElementById('sb-status').textContent = sbStatus;
+      document.getElementById('sb-status').innerHTML = sbStatus;
     }
 
     function showStatusBar(visible) {
@@ -404,14 +404,14 @@
     }
 
     // ── Phase changes ──────────────────────────────────────
-    socket.on('game:phaseChange', ({ phase, players, turnOrder, roundMode, currentRound, roundLoserIds: incomingRoundLoserIds }) => {
+    socket.on('game:phaseChange', ({ phase, players, turnOrder, roundMode, currentRound, durchgang, roundLoserIds: incomingRoundLoserIds }) => {
       if (incomingRoundLoserIds !== undefined) roundLoserIds = incomingRoundLoserIds;
 
       // Status Bar
       if (phase === 'loading' || phase === 'guessing') {
         const roundLabel = !roundMode ? '—'
-          : currentRound === 'final' ? 'Endspiel'
-          : `Runde ${currentRound}`;
+          : currentRound === 'final' ? `Endspiel / <span style="color:#ff8c00">${durchgang}</span>`
+          : `Runde ${currentRound} / <span style="color:#ff8c00">${durchgang}</span>`;
         const actionLabel = phase === 'loading' ? 'Laden' : 'Tippen';
         showStatusBar(true);
         updateStatusBar({ action: actionLabel, status: roundLabel });
