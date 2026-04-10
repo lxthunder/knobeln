@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="style.css">
   <style>
     .help-page {
-      max-width: 640px;
+      max-width: 680px;
       width: 100%;
       padding: 24px;
       display: flex;
@@ -52,150 +52,34 @@
     }
     .rule-box strong { color: #ff6b6b; }
 
-    /* ── Mockup Screens ── */
-    .mockup-wrap {
+    /* ── Screenshot Gallery ── */
+    .screen-wrap {
       display: flex;
-      gap: 24px;
+      gap: 16px;
       flex-wrap: wrap;
       align-items: flex-start;
     }
-    .mockup {
-      background: #000;
-      border: 1px solid #333;
-      padding: 20px 16px;
+    .screen-item {
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 14px;
-      min-width: 180px;
+      gap: 8px;
       flex: 1;
+      min-width: 140px;
+      max-width: 200px;
     }
-    .mockup-label {
+    .screen-item img {
+      width: 100%;
+      border: 1px solid #2a2a2a;
+      display: block;
+    }
+    .screen-label {
       font-size: 11px;
       color: #555;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      margin-bottom: 4px;
-      align-self: flex-start;
     }
-    .mock-h1 { font-size: 20px; letter-spacing: 2px; color: #fff; }
-    .mock-status { font-size: 10px; color: #555; letter-spacing: 1px; text-transform: uppercase; }
-    .mock-input {
-      background: transparent;
-      border: none;
-      border-bottom: 2px solid #555;
-      color: #ff8c00;
-      font-size: 18px;
-      font-weight: bold;
-      text-align: center;
-      padding: 2px 8px;
-      width: 140px;
-    }
-    .mock-checkbox-wrap {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 14px;
-      color: #aaa;
-    }
-    .mock-checkbox-wrap input { accent-color: #ff8c00; }
-    .mock-player-list {
-      list-style: none;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-    .mock-player-list li {
-      padding: 5px 10px;
-      border: 1px solid #333;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .mock-player-list li.active { border-color: #ff8c00; color: #ff8c00; }
-    .mock-player-list li.done { opacity: 0.35; }
-    .mock-badge { font-size: 11px; color: #fff; }
-    .mock-round-badge {
-      font-size: 11px;
-      font-weight: bold;
-      letter-spacing: 0.1em;
-      color: #ff8c00;
-      border: 1px solid #ff8c00;
-      padding: 2px 8px;
-    }
-    .mock-coins-row {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      justify-content: center;
-    }
-    .mock-coin {
-      width: 48px; height: 48px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 35%, #f5c842, #b8860b);
-      border: 2px solid #d4a017;
-    }
-    .mock-coin.off { background: #111; border-color: #222; }
-    .mock-whose-turn { font-size: 13px; color: #aaa; }
-    .mock-whose-turn span { color: #ff8c00; font-weight: bold; }
-    .mock-guess-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .mock-guess-btn {
-      width: 32px; height: 32px;
-      background: transparent;
-      border: 1px solid #444;
-      color: #fff;
-      font-size: 20px;
-      line-height: 1;
-      cursor: default;
-    }
-    .mock-guess-input {
-      width: 60px;
-      background: transparent;
-      border: none;
-      border-bottom: 3px solid #ff8c00;
-      color: #fff;
-      font-size: 28px;
-      font-weight: bold;
-      text-align: center;
-    }
-    .mock-reveal-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      width: 160px;
-    }
-    .mock-reveal-coin {
-      width: 24px; height: 24px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 35%, #f5c842, #b8860b);
-      border: 1px solid #d4a017;
-    }
-    .mock-total {
-      font-size: 36px;
-      font-weight: bold;
-      color: #fff;
-    }
-    .mock-total-label { font-size: 11px; color: #555; letter-spacing: 1px; }
-    .mock-correct-msg { font-size: 12px; color: #27ae60; }
-    .mock-violation-msg { font-size: 12px; color: #e74c3c; }
-    .mock-loser-name {
-      font-size: 32px;
-      font-weight: bold;
-      color: #ff8c00;
-      letter-spacing: 1px;
-    }
-    .mock-drink-badge {
-      font-size: 11px;
-      color: #aaa;
-      border: 1px solid #333;
-      padding: 2px 6px;
-    }
+
+    /* ── Spielablauf ── */
     .round-flow {
       display: flex;
       align-items: center;
@@ -211,6 +95,22 @@
     }
     .round-box.highlight { border-color: #ff8c00; color: #ff8c00; }
     .round-arrow { color: #444; font-size: 18px; }
+
+    /* ── Statuszeile Erklärung ── */
+    .status-bar-demo {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      border: 1px solid #2a2a2a;
+      padding: 8px 14px;
+      font-size: 13px;
+      width: fit-content;
+    }
+    .status-bar-demo .sb-name { color: #aaa; }
+    .status-bar-demo .sb-sep  { color: #333; margin: 0 10px; }
+    .status-bar-demo .sb-phase { color: #ff8c00; font-weight: bold; }
+    .status-bar-demo .sb-round { color: #aaa; margin-left: 12px; }
+    .status-bar-demo .sb-total { color: #ff8c00; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -238,21 +138,25 @@
       <li>Die Verlierer von Runde 1 und 2 spielen im Endspiel gegeneinander</li>
       <li>Verliert derselbe Spieler beide Runden, gibt es kein Endspiel</li>
     </ul>
+    <p>Die <strong style="color:#fff">Statuszeile</strong> oben zeigt immer den aktuellen Spieler, die Phase und den Spielfortschritt:</p>
+    <div class="status-bar-demo">
+      <span class="sb-name">Alex</span>
+      <span class="sb-sep">|</span>
+      <span class="sb-phase">Laden</span>
+      <span class="sb-sep">|</span>
+      <span class="sb-round">Runde 1 / <span class="sb-total">3</span></span>
+    </div>
+    <p style="font-size:13px;color:#555">Die Gesamtanzahl der Spiele pro Runde steht in Orange.</p>
   </div>
 
   <!-- SCREEN: LOGIN -->
   <div class="help-section">
     <h2>1. Beitritt</h2>
-    <p>Jeder Spieler gibt seinen Namen ein und bestätigt mit der Checkbox.</p>
-    <div class="mockup-wrap">
-      <div class="mockup">
-        <div class="mockup-label">Login-Screen</div>
-        <div class="mock-h1">KNOBELN</div>
-        <input class="mock-input" value="Alex" readonly>
-        <div class="mock-checkbox-wrap">
-          <input type="checkbox" checked disabled>
-          <label>Bereit</label>
-        </div>
+    <p>Jeder Spieler gibt seinen Namen ein und drückt den <strong style="color:#fff">Bereit</strong>-Knopf.</p>
+    <div class="screen-wrap">
+      <div class="screen-item">
+        <span class="screen-label">Login-Screen</span>
+        <img src="help/IMG_4201.PNG" alt="Login-Screen">
       </div>
     </div>
   </div>
@@ -260,21 +164,15 @@
   <!-- SCREEN: LOBBY -->
   <div class="help-section">
     <h2>2. Lobby</h2>
-    <p>Alle Spieler sehen die Teilnehmerliste. Der Host 👑 startet das Spiel. Der jüngste Spieler ist mit 🍼 markiert.</p>
-    <div class="mockup-wrap">
-      <div class="mockup">
-        <div class="mockup-label">Lobby-Screen</div>
-        <div class="mock-h1">KNOBELN</div>
-        <h2 style="font-size:14px;color:#aaa">Lobby</h2>
-        <ul class="mock-player-list">
-          <li>Alex 👑</li>
-          <li>Oli 🍼</li>
-          <li>Heiko</li>
-        </ul>
-        <div class="mock-checkbox-wrap">
-          <input type="checkbox" disabled>
-          <label style="color:#aaa">Bereit</label>
-        </div>
+    <p>Alle Spieler sehen die Teilnehmerliste. Der Host 👑 startet das Spiel mit dem <strong style="color:#fff">Bereit</strong>-Knopf. Der jüngste Spieler ist mit 🍼 markiert.</p>
+    <div class="screen-wrap">
+      <div class="screen-item">
+        <span class="screen-label">Warten auf Mitspieler</span>
+        <img src="help/IMG_4202.PNG" alt="Lobby – 1 Spieler">
+      </div>
+      <div class="screen-item">
+        <span class="screen-label">Alle beigetreten</span>
+        <img src="help/IMG_4203.PNG" alt="Lobby – 4 Spieler">
       </div>
     </div>
   </div>
@@ -282,130 +180,56 @@
   <!-- SCREEN: LADEN -->
   <div class="help-section">
     <h2>3. Münzen laden</h2>
-    <p>Jeder Spieler wählt verdeckt <strong style="color:#fff">0 bis 3 Münzen</strong>. Eine dunkle Münze = nicht geladen. Mit der Checkbox wird die Auswahl bestätigt.</p>
+    <p>Jeder Spieler wählt verdeckt <strong style="color:#fff">0 bis 3 Münzen</strong>. Angeklickte Münzen werden geladen. Mit dem <strong style="color:#fff">Bereit</strong>-Knopf wird die Auswahl bestätigt.</p>
     <div class="rule-box">
-      <strong>⚠️ Ausnahmeregel:</strong> Im ersten Durchgang von Runde 1 und 2 muss jeder Spieler mindestens 1 Münze laden. Wer als Erster mit 0 Münzen auffällt, verliert die Runde automatisch.
+      <strong>⚠️ Ausnahmeregel:</strong> Im ersten Spiel von Runde 1 und 2 muss jeder Spieler mindestens 1 Münze laden. Wer als Erster mit 0 Münzen auffällt, verliert die Runde automatisch.
     </div>
-    <div class="mockup-wrap">
-      <div class="mockup">
-        <div class="mockup-label">Laden-Screen (2 Münzen gewählt)</div>
-        <div class="mock-h1">LADEN</div>
-        <div class="mock-round-badge">RUNDE 1 VON 2</div>
-        <div class="mock-coins-row">
-          <div class="mock-coin"></div>
-          <div class="mock-coin"></div>
-          <div class="mock-coin off"></div>
-        </div>
-        <div class="mock-checkbox-wrap">
-          <input type="checkbox" disabled>
-          <label>Bereit</label>
-        </div>
-        <ul class="mock-player-list">
-          <li>Alex <span class="mock-badge">✓</span></li>
-          <li style="opacity:0.4">Oli <span class="mock-badge">...</span></li>
-          <li style="opacity:0.4">Heiko <span class="mock-badge">...</span></li>
-        </ul>
-        <div style="font-size:12px;color:#555">1 / 3 bereit</div>
+    <div class="screen-wrap">
+      <div class="screen-item">
+        <span class="screen-label">Aktiver Spieler</span>
+        <img src="help/IMG_4204.PNG" alt="Laden – aktiver Spieler">
       </div>
-      <div class="mockup">
-        <div class="mockup-label">Zuschauer-Ansicht</div>
-        <div class="mock-h1">LADEN</div>
-        <div class="mock-round-badge">RUNDE 2 VON 2</div>
-        <div style="font-size:12px;color:#ff8c00;border:1px solid #ff8c00;padding:4px 10px;">Du schaust zu</div>
-        <ul class="mock-player-list">
-          <li>Alex <span class="mock-badge">✓</span></li>
-          <li>Oli 💩 <span class="mock-badge">✓</span></li>
-          <li class="done">Heiko <span class="mock-badge">✓ Richtig geraten</span></li>
-        </ul>
+      <div class="screen-item">
+        <span class="screen-label">Zuschauer-Ansicht</span>
+        <img src="help/IMG_4213.PNG" alt="Laden – Zuschauer">
       </div>
     </div>
+    <p>Spieler, die bereits richtig geraten haben, schauen nur zu (<strong style="color:#fff">DU SCHAUST ZU</strong>) und werden mit 💩 markiert.</p>
   </div>
 
   <!-- SCREEN: TIPPEN -->
   <div class="help-section">
     <h2>4. Tippen</h2>
-    <p>Reihum rät jeder Spieler, wie viele Münzen insgesamt geladen wurden. Mit den <strong style="color:#fff">+/−</strong> Tasten oder direkt eingeben, dann mit der Checkbox bestätigen.</p>
-    <div class="mockup-wrap">
-      <div class="mockup">
-        <div class="mockup-label">Tippen-Screen (eigener Zug)</div>
-        <div class="mock-h1">TIPPEN</div>
-        <div class="mock-round-badge">RUNDE 1 VON 2</div>
-        <div class="mock-coins-row">
-          <div class="mock-coin"></div>
-          <div class="mock-coin"></div>
-          <div class="mock-coin off"></div>
-        </div>
-        <div class="mock-whose-turn">Du bist dran</div>
-        <div class="mock-guess-row">
-          <button class="mock-guess-btn">−</button>
-          <input class="mock-guess-input" value="5" readonly>
-          <button class="mock-guess-btn">+</button>
-        </div>
-        <div class="mock-checkbox-wrap">
-          <input type="checkbox" disabled>
-          <label>Bereit</label>
-        </div>
-        <ul class="mock-player-list">
-          <li class="active">Alex <span class="mock-badge">?</span></li>
-          <li>Oli</li>
-          <li>Heiko</li>
-        </ul>
-      </div>
-      <div class="mockup">
-        <div class="mockup-label">Tippen-Screen (warten)</div>
-        <div class="mock-h1">TIPPEN</div>
-        <div class="mock-round-badge">RUNDE 1 VON 2</div>
-        <div class="mock-coins-row">
-          <div class="mock-coin"></div>
-          <div class="mock-coin off"></div>
-          <div class="mock-coin off"></div>
-        </div>
-        <div class="mock-whose-turn">Dran: <span>Heiko</span></div>
-        <ul class="mock-player-list">
-          <li class="done">Alex <span class="mock-badge">5</span></li>
-          <li class="done">Oli <span class="mock-badge">4</span></li>
-          <li class="active">Heiko <span class="mock-badge">?</span></li>
-        </ul>
+    <p>Reihum rät jeder Spieler, wie viele Münzen insgesamt geladen wurden. Mit den <strong style="color:#fff">+/−</strong> Tasten einstellen und mit <strong style="color:#fff">Bereit</strong> bestätigen.</p>
+    <div class="screen-wrap">
+      <div class="screen-item">
+        <span class="screen-label">Tipp eingegeben</span>
+        <img src="help/IMG_4207.PNG" alt="Tippen – Tipp 6">
       </div>
     </div>
+    <ul>
+      <li>Bereits getippte Spieler sehen ihre Zahl in der Liste</li>
+      <li>Der aktive Spieler ist orange hervorgehoben</li>
+      <li>Man darf keine Zahl tippen, die schon ein anderer getippt hat</li>
+    </ul>
   </div>
 
   <!-- SCREEN: ERGEBNIS -->
   <div class="help-section">
     <h2>5. Ergebnis</h2>
-    <p>Die Münzen werden animiert aufgedeckt. Wer richtig geraten hat, scheidet aus (✓ Richtig geraten) und kommt in den Zuschauermodus. Der letzte Verbliebene verliert die Runde.</p>
-    <div class="mockup-wrap">
-      <div class="mockup">
-        <div class="mockup-label">Ergebnis – richtig geraten</div>
-        <div class="mock-h1">ERGEBNIS</div>
-        <div class="mock-reveal-grid">
-          <div class="mock-reveal-coin"></div>
-          <div class="mock-reveal-coin"></div>
-          <div class="mock-reveal-coin"></div>
-          <div class="mock-reveal-coin"></div>
-          <div class="mock-reveal-coin"></div>
-        </div>
-        <div class="mock-total-label">GESAMT</div>
-        <div class="mock-total">5</div>
-        <ul class="mock-player-list">
-          <li class="done">Alex <span class="mock-badge">5 ✓</span></li>
-          <li>Oli <span class="mock-badge">4</span></li>
-          <li>Heiko <span class="mock-badge">3</span></li>
-        </ul>
-        <div class="mock-correct-msg">Alex hat richtig geraten!</div>
+    <p>Die Gesamtzahl der Münzen wird angezeigt. Wer richtig geraten hat, erhält ✓ und kommt in den Zuschauermodus (💩). Der letzte Verbliebene verliert das Spiel.</p>
+    <div class="screen-wrap">
+      <div class="screen-item">
+        <span class="screen-label">Einer richtig geraten</span>
+        <img src="help/IMG_4208.PNG" alt="Ergebnis – Heiko richtig">
       </div>
-      <div class="mockup">
-        <div class="mockup-label">Ergebnis – Regelverstoß</div>
-        <div class="mock-h1">ERGEBNIS</div>
-        <div class="mock-reveal-grid"></div>
-        <div class="mock-total-label">GESAMT</div>
-        <div class="mock-total">4</div>
-        <ul class="mock-player-list">
-          <li>Alex <span class="mock-badge">3</span></li>
-          <li>Oli <span class="mock-badge">0 Münzen</span></li>
-          <li>Heiko <span class="mock-badge">2</span></li>
-        </ul>
-        <div class="mock-violation-msg">⚠️ Oli hatte keine Münze – Runde verloren!</div>
+      <div class="screen-item">
+        <span class="screen-label">Mehrere richtig</span>
+        <img src="help/IMG_4210.PNG" alt="Ergebnis – Oli und Issi richtig">
+      </div>
+      <div class="screen-item">
+        <span class="screen-label">Rundenverlierer</span>
+        <img src="help/IMG_4211.PNG" alt="Ergebnis – Alex verliert Runde 1">
       </div>
     </div>
   </div>
@@ -414,72 +238,40 @@
   <div class="help-section">
     <h2>6. Endspiel</h2>
     <p>Die Verlierer von Runde 1 und Runde 2 spielen gegeneinander. Alle anderen schauen zu. Der Verlierer von Runde 1 beginnt.</p>
-    <div class="mockup-wrap">
-      <div class="mockup">
-        <div class="mockup-label">Tippen-Screen – Endspiel</div>
-        <div class="mock-h1">TIPPEN</div>
-        <div class="mock-round-badge">ENDSPIEL</div>
-        <div class="mock-coins-row">
-          <div class="mock-coin"></div>
-          <div class="mock-coin"></div>
-          <div class="mock-coin off"></div>
-        </div>
-        <div class="mock-whose-turn">Du bist dran</div>
-        <div class="mock-guess-row">
-          <button class="mock-guess-btn">−</button>
-          <input class="mock-guess-input" value="3" readonly>
-          <button class="mock-guess-btn">+</button>
-        </div>
-        <ul class="mock-player-list">
-          <li class="active">Oli <span class="mock-badge">?</span></li>
-          <li>Heiko</li>
-        </ul>
+    <div class="screen-wrap">
+      <div class="screen-item">
+        <span class="screen-label">Endspiel-Ankündigung</span>
+        <img src="help/IMG_4214.PNG" alt="Endspiel – Ankündigung">
+      </div>
+      <div class="screen-item">
+        <span class="screen-label">Tippen im Endspiel</span>
+        <img src="help/IMG_4209.PNG" alt="Tippen – Endspiel">
+      </div>
+      <div class="screen-item">
+        <span class="screen-label">Unmögliche Zahl</span>
+        <img src="help/IMG_4215.PNG" alt="Ergebnis – unmögliche Zahl">
       </div>
     </div>
+    <p>Wer eine <strong style="color:#fff">unmögliche Zahl</strong> tippt (mehr als maximal mögliche Münzen) verliert das Spiel sofort.</p>
   </div>
 
   <!-- SCREEN: VERLIERER -->
   <div class="help-section">
     <h2>7. Verlierer</h2>
-    <p>Der Verlierer wird groß angezeigt. Dazu erscheint eine Liste aller Mitspieler mit ihrem Lieblingsgetränk aus der Datenbank. Mit <strong style="color:#fff">O.K.</strong> startet ein neues Spiel.</p>
-    <div class="mockup-wrap">
-      <div class="mockup">
-        <div class="mockup-label">Verlierer-Screen</div>
-        <div class="mock-h1">KNOBELN</div>
-        <div class="mock-status">VERLIERER</div>
-        <div class="mock-loser-name">Heiko</div>
-        <ul class="mock-player-list">
-          <li style="color:#ff8c00">Heiko <span class="mock-drink-badge">Eierlikör</span></li>
-          <li>Alex <span class="mock-drink-badge">Miro</span></li>
-          <li>Oli <span class="mock-drink-badge">Veggia</span></li>
-        </ul>
-        <div class="mock-checkbox-wrap">
-          <input type="checkbox" disabled>
-          <label>O.K.</label>
-        </div>
+    <p>Der Verlierer wird groß angezeigt. Daneben erscheinen alle Mitspieler mit ihrem Lieblingsgetränk. Mit <strong style="color:#fff">O.K.</strong> startet ein neues Spiel.</p>
+    <div class="screen-wrap">
+      <div class="screen-item">
+        <span class="screen-label">Verlierer-Screen</span>
+        <img src="help/IMG_4216.PNG" alt="Verlierer-Screen">
       </div>
     </div>
+    <p>Der Verlierer trägt zwei 💩💩 wenn er das Endspiel verloren hat.</p>
   </div>
 
   <!-- DATENBANK -->
   <div class="help-section">
     <h2>Spieler-Datenbank</h2>
     <p>Unter <strong style="color:#fff">localhost:8080/datenbank.html</strong> können Spieler mit Name, Geburtstag und Lieblingsgetränk verwaltet werden. Der Geburtstag bestimmt, wer 🍼 anfängt.</p>
-    <div class="mockup-wrap">
-      <div class="mockup" style="min-width:300px">
-        <div class="mockup-label">Datenbank-Seite</div>
-        <div class="mock-h1">KNOBELN</div>
-        <h2 style="font-size:14px;color:#aaa">Spieler-Datenbank</h2>
-        <table class="db-table" style="width:100%">
-          <thead><tr><th>Name</th><th>Geburtstag</th><th>Getränk</th></tr></thead>
-          <tbody>
-            <tr><td>Alex</td><td>20.10.1961</td><td>Miro</td></tr>
-            <tr><td>Oli</td><td>01.12.1965</td><td>Veggia</td></tr>
-            <tr><td>Heiko</td><td>02.06.1965</td><td>Eierlikör</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
   </div>
 
 </div>
