@@ -21,10 +21,12 @@
     .checkbox-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
     .checkbox-wrap input[type="checkbox"] { display: none; }
     .checkbox-wrap label {
-      font-size: 16px; font-weight: bold; color: #fff; letter-spacing: 1px;
-      background: #ff8c00; border: 2px solid #fff; border-radius: 12px;
-      padding: 10px 28px; cursor: pointer;
+      font-size: 16px; font-weight: bold; color: #ff8c00; letter-spacing: 1px;
+      background: url('WebButton.png') center / 100% 100% no-repeat;
+      border: none; border-radius: 0;
+      padding: 12px 40px; cursor: pointer;
       transition: opacity 0.2s;
+      text-shadow: 1px 1px 2px #000;
     }
     .checkbox-wrap input:checked + label { opacity: 0.35; cursor: default; }
     .checkbox-wrap input:disabled + label { opacity: 0.25; cursor: default; }
