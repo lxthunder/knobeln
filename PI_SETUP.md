@@ -23,13 +23,6 @@ git add -A && git checkout -f rundenmodus
 npm install
 ```
 
-### Updates einspielen (nach Code-Änderungen)
-
-```bash
-ssh bueffel@knobelserver.local
-cd ~/knobelstatz && git pull origin rundenmodus && sudo systemctl restart knobelstatz
-```
-
 ---
 
 ## 2. Pakete installieren
@@ -191,6 +184,19 @@ Pi neu starten:
 ```bash
 sudo reboot
 ```
+
+---
+
+## 8. Updates einspielen
+
+Wenn der Code auf GitHub geändert wurde, auf dem Pi aktualisieren:
+
+```bash
+ssh bueffel@knobelserver.local
+cd ~/knobelstatz && git pull origin rundenmodus && sudo systemctl restart knobelstatz
+```
+
+Der Server startet automatisch neu und lädt die neue Version.
 
 ---
 
